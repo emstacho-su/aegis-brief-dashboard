@@ -419,6 +419,59 @@ function fakeSupabase(db) {
     console.log('5. motion          skeleton + status line, enter keyed to route/tab/expand, FLIP fallback, closeOv, busy buttons, accordion markup, toast leaving');
   }
 
+  /* --- regressions: home-area --- */
+  {
+    const clone = o => JSON.parse(JSON.stringify(o));
+    const cfg = { apiBase: '', mode: 'container' };
+    const boot = async set => start({ config: cfg, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: clone(set) }) }) });
+    const countEv = h => (h.match(/class="ev"/g) || []).length;
+    const dayHeads = h => [...h.matchAll(/<div class="day">(?:Today · )?(\d{4}-\d{2}-\d{2})<\/div>/g)].map(m => m[1]);
+    const env = await boot(briefs);
+    env.ctx.location.hash = '#home'; env.run("state.tab='mine';state.streamAll=false;state.f.area=null;render()");
+    let h = env.main().innerHTML;
+    const keys = env.run('Object.keys(AREAS)');
+    const pris = keys.map(k => env.run(`areaStats('${k}',BRIEFS[TODAY_S]).maxPri`));
+    ok(pris.some(p => p !== 'none'), 'area priority: maxPri is always none');
+    keys.forEach((k, i) => { if (env.run(`areaStats('${k}',BRIEFS[TODAY_S]).items.length`) && pris[i] === 'none') ok(false, `area ${k} has items but maxPri none`); });
+    const exp = env.run('DATES.slice(-2)');
+    ok(h.includes('today and the previous brief'), 'stream subtitle lacks "today and the previous brief"');
+    const heads = dayHeads(h);
+    ok(heads.length > 0 && heads.every(d => exp.includes(d)) && heads.includes(exp[1]), 'stream shows dates ' + heads.join(',') + ' expected within ' + exp.join(','));
+    const short = countEv(h), m = h.match(/Show all 30 days \((\d+)\)/);
+    ok(m && /Show all/.test(h), 'Show all button missing');
+    env.run('state.streamAll=true;render()'); h = env.main().innerHTML;
+    ok(m && countEv(h) === Number(m[1]), `Show all N=${m && m[1]} but rendered ${countEv(h)}`);
+    ok(/data-streamless/.test(h) && />Show less</.test(h), 'Show less control missing');
+    env.run('state.streamAll=false;render()');
+    ok(countEv(env.main().innerHTML) === short, 'Show less did not restore short window');
+    ok(/feeds n\/a/.test(h) && !/null|undefined|NaN/.test(h.slice(h.indexOf('class="health"'))), 'health strip: feeds n/a missing or null/NaN present');
+    env.ctx.location.hash = '#area-nope'; env.run('state.area="nope";state.page="area";render()');
+    ok(/href="#home"/.test(env.main().innerHTML) && /Unknown area/.test(env.main().innerHTML), 'unknown area has no link back to #home');
+    env.run('state.f.tier=3;state.f.status="new"');
+    env.ctx.location.hash = '#area-' + keys[0]; env.run(`state.area="${keys[0]}";state.page="area";render()`);
+    ok(!/No items in this area today/.test(env.main().innerHTML) || !env.run('state.f.tier'), 'filtered empty area still says today');
+    env.run('state.f.tier=null;state.f.status=null');
+    const tabH = (env.ctx.location.hash = '#home', env.run("state.tab='mine';state.page='home';render()"), env.main().innerHTML);
+    ok(/New today<span class="sr-only">, <\/span><span class="c">/.test(tabH) || /New today[^<]*<span class="c" aria-label/.test(tabH), 'tab badge has no separator for accessible name');
+    ok(env.errors.length === 0, 'home-area console.error: ' + env.errors.slice(0, 2).join(' | '));
+
+    const first = Object.keys(briefs)[0];
+    const one = await boot({ [first]: briefs[first] });
+    one.ctx.location.hash = '#home'; one.run("state.tab='mine';state.streamAll=false;state.f.area=null;render()");
+    h = one.main().innerHTML;
+    ok(!/NaN/.test(h), 'single brief: NaN in home markup');
+    ok(countEv(h) > 0, 'single brief: stream is empty');
+    ok(one.errors.length === 0, 'single brief console.error: ' + one.errors.slice(0, 2).join(' | '));
+    ok(one.run('sparkline([3])').indexOf('NaN') < 0 && one.run('sparkline([])').indexOf('NaN') < 0, 'sparkline emits NaN for 0/1 values');
+
+    const two = Object.keys(briefs).slice(0, 2);
+    const tw = await boot({ [two[0]]: briefs[two[0]], [two[1]]: briefs[two[1]] });
+    tw.ctx.location.hash = '#home'; tw.run("state.streamAll=false;render()");
+    ok(countEv(tw.main().innerHTML) > 0 && !/NaN/.test(tw.main().innerHTML), 'two briefs: stream empty or NaN');
+    console.log('3e. home-area      priority rail, stream window/Show less, feeds n/a, unknown area link, single-brief NaN');
+  }
+  /* --- end regressions: home-area --- */
+
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
