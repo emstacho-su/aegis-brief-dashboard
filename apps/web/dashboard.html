@@ -165,6 +165,14 @@ h1,h2,h3{text-wrap:balance}
 .two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:1.25rem;align-items:start}
 @media (max-width:900px){.two{grid-template-columns:1fr}}
 .rail{display:flex;flex-direction:column;gap:1.1rem;min-width:0}
+/* v1.3.1: when the item column is shorter than the rail (few items, or a filter), fitTwo() adds .wrap and the
+   rail's cards flow into a grid under the last item instead of running on as a narrow column. Section headers
+   span the grid; tables keep full width. */
+.two.wrap{grid-template-columns:minmax(0,1fr)}
+.two.wrap .rail{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.75rem 1rem;align-items:start}
+.two.wrap .rail .sec,.two.wrap .rail .stack{display:contents}
+.two.wrap .rail .sec-h{grid-column:1/-1;margin:.5rem 0 0}
+.two.wrap .rail .tw,.two.wrap .rail .empty{grid-column:1/-1}
 .sec{margin-bottom:1.3rem;min-width:0}
 .sec-h{display:flex;align-items:center;justify-content:space-between;gap:.75rem;border-left:3px solid var(--border-hover);padding-left:.6rem;margin-bottom:.5rem;flex-wrap:wrap}
 .sec-h h2{margin:0;font-size:14px;font-weight:600;letter-spacing:.3px}
@@ -1184,7 +1192,7 @@ function renderSearch(){const q=document.getElementById('q');const box=document.
   const r=searchItems(q.value);box.hidden=false;box.innerHTML=r.length?r.map(L=>`<div class="r" data-open="${esc(L.id)}"><span class="t">${esc(L.title)}</span><span class="m">${L.identifiers[0]?esc(L.identifiers[0])+' · ':''}${L.last_seen===TODAY_S?'today':esc(L.last_seen)}${L.maxTier===1?' · T1':''}</span></div>`).join(''):'<div class="none">No items match.</div>'}
 function render(){
   if(!BOOTED)return; /* the loader (boot) owns #main until data is in */
-  try{renderInner()}catch(e){
+  try{renderInner();fitTwo()}catch(e){
     if(typeof console!=='undefined')console.error('AEGIS render failed',e);
     const main=document.getElementById('main');if(main)main.innerHTML=`<div class="banner-err" role="alert">This view failed to render (${esc(e&&e.message||e)}). <a href="#home">Back to Your work</a></div>`;
     document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
@@ -1199,6 +1207,22 @@ function renderInner(){
   renderSide();renderRibbon();renderUmenu();
   document.title=(h.item?'Item · ':'')+({home:'Your work',area:(AREAS[state.area]||{}).name||'Area',brief:'Daily brief '+state.date,trends:state.report?(REPORTS.find(r=>r.id===state.report)||{}).t||'Trends':'Trends',archive:'Archive'}[state.page]||'')+' · AEGIS Daily Brief';
 }
+/* Two-column pages (brief, area): measure the item column against the rail in the normal layout and wrap the rail
+   under the items when it would otherwise run well past them. 120px of hysteresis both ways so expanding one
+   item does not flip the layout. Below 900px the media query already stacks everything. */
+function fitTwo(){
+  let els;try{els=document.querySelectorAll('.two')}catch(e){return}
+  els.forEach(el=>{
+    const left=el.firstElementChild,rail=el.querySelector('.rail');
+    if(!left||!rail||typeof rail.offsetHeight!=='number'||window.innerWidth<=900){el.classList.remove('wrap');return}
+    const was=el.classList.contains('wrap');
+    el.classList.remove('wrap');
+    const diff=rail.offsetHeight-left.offsetHeight;
+    if(diff>120||(was&&diff>-120))el.classList.add('wrap');
+  });
+}
+let fitTimer=null;
+if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('resize',()=>{clearTimeout(fitTimer);fitTimer=setTimeout(fitTwo,120)});
 let lastOpener=null;
 function closeOv(){location.hash=pageHash();setTimeout(()=>{const el=lastOpener&&document.querySelector(`[data-open="${lastOpener}"],[data-expand="${lastOpener}"]`);if(el)el.focus()},0)}
 document.addEventListener('click',e=>{
