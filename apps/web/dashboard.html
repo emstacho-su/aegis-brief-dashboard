@@ -494,7 +494,7 @@ footer .accent{color:var(--accent)}
   <div style="display:flex;align-items:center;gap:.5rem;min-width:0"><button class="menubtn" id="menubtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side">☰</button><div class="brand">SU InfoSec<span class="pipe">|</span>AEGIS Daily Brief</div></div>
   <div class="hdr-right">
     <div class="search"><input id="q" type="search" placeholder="Search items, CVEs" autocomplete="off" aria-label="Search items"><div class="sres" id="sres" hidden></div></div>
-    <span class="ribbon" id="ribbon">v1.3.3</span>
+    <span class="ribbon" id="ribbon">v1.4.0</span>
     <button class="plus" id="fbBtn" title="Report a bug or request a change" aria-label="Report a bug or request a change"><span aria-hidden="true">+</span></button>
     <button class="avatar" id="avatarBtn" aria-expanded="false" aria-haspopup="menu" aria-label="Account menu" title="Account">A</button>
     <div class="umenu" id="umenu" hidden role="menu"></div>
@@ -702,7 +702,18 @@ function buildIndex(){
    ========================================================================= */
 (function(){try{const t=localStorage.getItem('aegis4-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
 const state={pick:false,page:'home',date:TODAY_S,area:null,report:null,tab:'mine',level:new Map(),ctx:new Set(),f:{area:null,tier:null,status:null,source:null,period:30},sel:null,cum:false,streamAll:false};
-const store={get(k,d){try{const v=localStorage.getItem('aegis4-'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('aegis4-'+k,JSON.stringify(v))}catch(e){}if(k==='my'||k==='stars'||k==='viewed')scheduleSettingsSync()}};
+/* Browser cache, namespaced per signed-in user so two people sharing a browser never see or seed each other's
+   state. Anonymous (no auth, sample or container mode without Supabase) uses the 'anon' namespace. The theme hint
+   (aegis4-theme) stays global on purpose: it is read before auth to avoid a flash, and the user's own theme
+   overwrites it on pull. */
+let STORE_NS='aegis4-anon-';
+const store={get(k,d){try{const v=localStorage.getItem(STORE_NS+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(STORE_NS+k,JSON.stringify(v))}catch(e){}if(k==='my'||k==='stars'||k==='viewed')scheduleSettingsSync()}};
+function setStoreNs(uid){
+  const ns='aegis4-'+(uid?String(uid).replace(/-/g,'').slice(0,12):'anon')+'-';if(ns===STORE_NS)return;STORE_NS=ns;
+  myAreas=new Set(store.get('my',[]));stars=new Set(store.get('stars',[]));viewed=store.get('viewed',[]);
+  if(typeof fb!=='undefined'){fb.list=store.get('feedback',[])}
+  if(typeof state!=='undefined'){state.coll=new Set(store.get('coll',[]));state.sideCollapsed=!!store.get('sidecol',false)}
+}
 let myAreas=new Set(store.get('my',[])),stars=new Set(store.get('stars',[])),viewed=store.get('viewed',[]);
 function markViewed(id){viewed=[id,...viewed.filter(x=>x!==id)].slice(0,12);store.set('viewed',viewed)}
 function brief(){return BRIEFS[state.date]||BRIEFS[TODAY_S]}
@@ -1111,7 +1122,7 @@ rank 2  chunk c_1a07  doc d_feeds/${esc(it.source.name.toLowerCase().replace(/\s
 /* =========================================================================
    7. Notes, mount, events
    ========================================================================= */
-function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.3.3 · ${DATES.length} briefs · ${MODE}`:'v1.3.3'}
+function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.4.0 · ${DATES.length} briefs · ${MODE}`:'v1.4.0'}
 state.coll=new Set(store.get('coll',[]));state.side=new Set();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
 const I={
  home:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -1385,7 +1396,7 @@ async function initSupabase(){
 function setAuthCookie(session){try{const secure=location.protocol==='https:'?'; Secure':'';if(session&&session.access_token){document.cookie='aegis_token='+encodeURIComponent(session.access_token)+'; Path=/; SameSite=Strict'+secure}else{document.cookie='aegis_token=; Path=/; Max-Age=0; SameSite=Strict'+secure}}catch(e){}}
 function onAuthChange(ev,session){
   const prev=userId();SESSION=session||null;renderAvatar();setAuthCookie(SESSION);
-  if(ev==='SIGNED_OUT'){if(prev)renderUmenu();return}
+  if(ev==='SIGNED_OUT'){setStoreNs(null);if(prev)renderUmenu();return}
   const uid=userId();if(ev!=='SIGNED_IN'||!uid||uid===prev)return;
   announce('Signed in as '+userEmail());
   if(!BOOTED){if(SIGNIN&&!booting){SIGNIN=false;boot()}return}   /* e.g. the link was opened in another tab */
@@ -1457,7 +1468,7 @@ async function signOut(){
   state.umenu=false;renderUmenu();
   if(syncTimer){clearTimeout(syncTimer);syncTimer=null;try{await pushSettings()}catch(e){}}
   try{if(SB)await SB.auth.signOut({scope:'local'})}catch(e){}
-  SESSION=null;setAuthCookie(null);renderAvatar();announce('Signed out');
+  SESSION=null;setAuthCookie(null);setStoreNs(null);renderAvatar();announce('Signed out');
   if(needAuth()){BOOTED=false;document.getElementById('side').innerHTML='';showSignIn();renderUmenu()}
   else render();
 }
@@ -1465,6 +1476,7 @@ async function signOut(){
 /* ---- user_settings sync: localStorage stays the fallback and a write-through cache ---- */
 async function pullSettings(){
   const uid=userId();if(!SB||!uid)return;
+  setStoreNs(uid);   /* this user's cache, empty on a browser they have not used */
   try{
     const q=SB.from('user_settings').select('my_areas,stars,viewed,theme').eq('user_id',uid).maybeSingle();
     const r=await Promise.race([q,new Promise(res=>setTimeout(()=>res({timeout:true}),4000))]);

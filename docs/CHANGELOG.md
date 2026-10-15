@@ -2,6 +2,10 @@
 
 Design-cycle notes for `apps/web/dashboard.html`. These used to ship inside the page behind a "Design notes" toggle in the account menu; they were moved here in v1.3.1 so readers never see them.
 
+## v1.4.0 · per-user browser cache
+
+The localStorage cache (my areas, stars, viewed, feedback list, collapsed sections, sidebar) is namespaced by user id and switched on sign-in and sign-out, so people sharing a browser never see or seed each other's state. A first sign-in on a new browser seeds the `user_settings` row from an empty set. Added the `feedback_review` view (migration 0002) for reading feedback with the submitter's email.
+
 ## v1.3.3 · code length
 
 The code field accepts 6 to 10 digits; the Supabase project sends 8-digit codes (Email OTP Length). Copy no longer says "6-digit".

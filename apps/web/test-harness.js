@@ -172,7 +172,7 @@ function fakeSupabase(db) {
     ok(env.run('BOOTED'), 'container (index) did not boot');
     ok(env.run('IDX.daily[0].__adopted===true'), 'server index was not adopted');
     const ribbon = env.els.get('ribbon').textContent;
-    ok(ribbon === `v1.3.3 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
+    ok(ribbon === `v1.4.0 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
     const c = renderAll(env, 'container/index');
     env.ctx.location.hash = '#archive'; env.run('render()');
     const arch = env.main().innerHTML;
@@ -215,7 +215,7 @@ function fakeSupabase(db) {
       const op = st.ops.map(o => o[0]);
       if (st.table === 'briefs') return { data: Object.keys(briefs).map(d => ({ date: d, data: JSON.parse(JSON.stringify(briefs[d])) })), error: null };
       if (st.table === 'archive_index') return { data: { data: JSON.parse(JSON.stringify(computedIndex)) }, error: null };
-      if (st.table === 'user_settings' && op.includes('select')) return { data: { my_areas: ['perimeter'], stars: ['x1'], viewed: [], theme: 'light' }, error: null };
+      if (st.table === 'user_settings' && op.includes('select')) { const who = (st.ops.find(o => o[0] === 'eq') || [])[2]; return who === uid ? { data: { my_areas: ['perimeter'], stars: ['x1'], viewed: [], theme: 'light' }, error: null } : { data: null, error: null }; }
       return { data: null, error: null };
     } });
     const env = await start({ config: { apiBase: '', supabaseUrl: 'https://p.supabase.co', supabaseAnonKey: 'anon', requireAuth: true, mode: 'static' }, supabase: fake.lib });
@@ -243,7 +243,7 @@ function fakeSupabase(db) {
     fake.signIn({ access_token: 'tok', user: { id: uid, email: 'analyst@syr.edu' } });
     await sleep(80); await env.run('booting||Promise.resolve()'); await sleep(40);
     ok(env.run('BOOTED') && env.run('MODE') === 'static', 'static mode did not boot after sign-in');
-    ok(env.els.get('ribbon').textContent === `v1.3.3 · ${nBriefs} briefs · static`, 'static ribbon');
+    ok(env.els.get('ribbon').textContent === `v1.4.0 · ${nBriefs} briefs · static`, 'static ribbon');
     ok(env.els.get('avatarBtn').textContent === 'A' && /analyst@syr\.edu/.test(env.els.get('avatarBtn').getAttribute('aria-label')), 'avatar not updated');
     ok(env.run("myAreas.has('perimeter')&&stars.has('x1')") && env.ctx.document.documentElement.getAttribute('data-theme') === 'light', 'remote settings not applied');
     const c = renderAll(env, 'static');
@@ -252,7 +252,7 @@ function fakeSupabase(db) {
     /* settings write-through, debounced */
     const before = fake.log.queries.filter(q => q.table === 'user_settings' && q.ops[0][0] === 'upsert').length;
     env.run("stars.add('x2');store.set('stars',[...stars]);stars.add('x3');store.set('stars',[...stars]);setTheme('dark')");
-    ok(env.ctx.localStorage.getItem('aegis4-stars').includes('x3'), 'localStorage cache not written');
+    ok(env.ctx.localStorage.getItem('aegis4-' + uid.replace(/-/g, '').slice(0, 12) + '-stars').includes('x3') && env.ctx.localStorage.getItem('aegis4-stars') == null, 'per-user localStorage cache not written');
     await sleep(400);
     const ups = fake.log.queries.filter(q => q.table === 'user_settings' && q.ops[0][0] === 'upsert');
     ok(ups.length - before === 1, `expected one debounced upsert, got ${ups.length - before}`);
@@ -271,6 +271,17 @@ function fakeSupabase(db) {
     ok(/Saved to the team store/.test(env.els.get('fbroot').innerHTML) && env.run("fb.list.length===1&&fb.list[0].remote==='saved'"), 'feedback status/local list');
     await env.run('signOut()'); await sleep(40);
     ok(fake.log.signOut === 1 && /id="signinForm"/.test(env.main().innerHTML) && !env.run('BOOTED'), 'sign out did not return to sign-in');
+    ok(env.run("stars.size===0&&myAreas.size===0&&fb.list.length===0"), 'user state still in memory after sign out');
+    /* a second user on the same browser, with no row yet: must not inherit the first user's cache */
+    const uid2 = '99999999-8888-7777-6666-555555555555';
+    const upsBefore2 = fake.log.queries.filter(q => q.table === 'user_settings' && q.ops[0][0] === 'upsert').length;
+    fake.signIn({ access_token: 'tok2', user: { id: uid2, email: 'second@syr.edu' } });
+    await sleep(80); await env.run('booting||Promise.resolve()'); await sleep(400);
+    const ups2 = fake.log.queries.filter(q => q.table === 'user_settings' && q.ops[0][0] === 'upsert');
+    const seed = ups2.length > upsBefore2 ? ups2[ups2.length - 1].ops[0][1] : null;
+    ok(env.run("stars.size===0&&myAreas.size===0&&fb.list.length===0"), 'second user inherited first user state');
+    ok(!seed || (seed.user_id === uid2 && seed.stars.length === 0 && seed.my_areas.length === 0), 'second user seeded from first user cache: ' + JSON.stringify(seed));
+    await env.run('signOut()'); await sleep(40);
     console.log(`4. static+auth     sign-in screen (focus=email), OTP sent (shouldCreateUser=false), session -> loaded ${env.run('DATES.length')} briefs from table briefs + archive_index, settings pulled and upserted once (300ms debounce), feedback uploaded to ${up.path.replace(uid, '<uid>')} and inserted, sign out -> sign-in; views=${c.views} popouts=${c.popouts}`);
     console.log('   supabase calls: ' + [...new Set(fake.log.queries.map(q => q.table + ':' + q.ops.map(o => o[0]).join('.')))].join(', '));
   }

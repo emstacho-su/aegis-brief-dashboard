@@ -58,3 +58,27 @@ In the dashboard: Authentication, Email Templates, Magic Link. Subject `Your AEG
 
 Also set custom SMTP (Authentication, SMTP Settings) before inviting anyone: the built-in mailer allows two emails
 per hour per project. Once SMTP is on, raise the email rate limit under Authentication, Rate Limits.
+
+## Reviewing feedback
+
+Every entry a signed-in reader submits with the + control is a row in `public.feedback` (`user_id`, `page`, `bug`,
+`change`, `screenshot_path`, `created_at`); the screenshot is an object in the private `feedback-screenshots`
+bucket at `screenshot_path` (`<user id>/<timestamp>.jpg`). Readers can only see their own rows (RLS).
+
+To read everything with the submitter's email, use the `feedback_review` view (migration 0002) from the SQL editor:
+
+```sql
+select created_at, email, page, bug, change, screenshot_path
+from public.feedback_review
+order by created_at desc;
+```
+
+Open a screenshot from Storage, bucket `feedback-screenshots`, by its path. The view is not exposed through the
+API to anon or authenticated roles; only the dashboard (postgres) and the service key can read it.
+
+## Per-user state
+
+`my areas`, stars, recently viewed and theme live in `public.user_settings`, one row per user, pulled on every
+sign-in and written back (debounced) on every change, so they follow the user across browsers and sessions. The
+page's browser cache is namespaced by user id, so two people sharing a browser never see or seed each other's
+state; a first sign-in on a new browser starts from the user's own row (or empty), never from the cache.
