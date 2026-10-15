@@ -59,7 +59,7 @@ function makeEnv({ config, fetchImpl, supabase } = {}) {
   if (config) ctx.AEGIS_CONFIG = config;
   if (supabase) ctx.supabase = supabase;
   vm.createContext(ctx);
-  return { ctx, els, errors, run: code => vm.runInContext(code, ctx), main: () => els.get('main') || { innerHTML: '' } };
+  return { ctx, els, errors, listeners, run: code => vm.runInContext(code, ctx), main: () => els.get('main') || { innerHTML: '' } };
 }
 async function start(opts) {
   const env = makeEnv(opts);
@@ -418,6 +418,76 @@ function fakeSupabase(db) {
     ok(env.errors.length === 0, `motion console.error: ${env.errors.slice(0, 3).join(' | ')}`);
     console.log('5. motion          skeleton + status line, enter keyed to route/tab/expand, FLIP fallback, closeOv, busy buttons, accordion markup, toast leaving');
   }
+
+  /* --- regressions: shell --- */
+  {
+    const fire = (env, type, ev) => (env.listeners['doc:' + type] || []).forEach(fn => fn(ev));
+    const fakeTarget = (extra = {}) => Object.assign({ id: '', matches: () => false, hasAttribute: () => false, closest: () => null }, extra);
+    const env = await start();
+    const { ctx, run, els } = env;
+    /* skip link: #main is not a route */
+    ctx.location.hash = '#brief'; run('render()');
+    const titleBefore = ctx.document.title;
+    ctx.location.hash = '#main'; run('render()');
+    ok(run('state.page') === 'brief' && ctx.document.title === titleBefore, `#main changed the page or title: ${run('state.page')} / ${ctx.document.title}`);
+    ok(ctx.location.hash === '#brief', '#main was left as the hash: ' + ctx.location.hash);
+    ok(ctx.__focused === 'main', 'skip link did not focus #main, focused ' + ctx.__focused);
+    /* unknown hashes render Home and normalise to #home */
+    ctx.location.hash = '#bogus'; run('render()');
+    ok(ctx.location.hash === '#home' && run('state.page') === 'home', 'unknown hash not normalised: ' + ctx.location.hash);
+    /* plural helper */
+    ok(run("plural(1,'brief')") === 'brief' && run("plural(0,'brief')") === 'briefs' && run("plural(2,'day')") === 'days' && run("plural(2,'city','cities')") === 'cities' && run("plural(1,'city','cities')") === 'city', 'plural() is wrong');
+    /* Escape closes the account menu and the drawer */
+    run('state.umenu=true;renderUmenu()');
+    fire(env, 'keydown', { key: 'Escape', target: fakeTarget(), preventDefault() {} });
+    ok(run('state.umenu') === false && els.get('umenu').hidden === true, 'Escape did not close the account menu');
+    ok(ctx.__focused === 'avatarBtn', 'Escape did not return focus to the avatar, focused ' + ctx.__focused);
+    run('state.sideOpen=true;renderSide()');
+    fire(env, 'keydown', { key: 'Escape', target: fakeTarget(), preventDefault() {} });
+    ok(run('state.sideOpen') === false && els.get('menubtn').getAttribute('aria-expanded') === 'false', 'Escape did not close the drawer and reset aria-expanded');
+    /* menu markup: roles, no placeholder copy, theme group does not reuse the chart class */
+    run('renderUmenu()');
+    const menu = els.get('umenu').innerHTML;
+    ok(/role="menuitem"/.test(menu) && !/to come|Sign out<span class="c">later/.test(menu), 'menu roles or placeholder copy wrong');
+    ok(/class="tseg"/.test(menu) && !/class="seg"/.test(menu), 'theme group still uses the chart .seg class');
+    ok(/<button[^>]*disabled[^>]*>Sign in/.test(menu) && /Supabase/.test(menu), 'disabled Sign in entry with the Supabase explanation is missing');
+    ok(!/wireframe/.test(require('fs').readFileSync(HTML, 'utf8')), 'footer still says wireframe');
+    /* focus restore: key by id or data attribute, refocus after the render */
+    ok(run("focusKey({id:'sideTgl',hasAttribute:()=>false,closest:()=>null})") === '#sideTgl', 'focusKey ignored the id');
+    ok(run(`focusKey({id:'',hasAttribute:a=>a==='data-tab',getAttribute:()=>'new',closest:()=>null})`) === '[data-tab="new"]', 'focusKey ignored data-tab');
+    ok(run("focusKey({id:'x',hasAttribute:()=>false,closest:s=>s==='#ov'?{}:null})") === null, 'focusKey kept an element inside the popout');
+    {
+      let focused = 0; const target = { hasAttribute: () => false, focus: o => { focused++; ctx.document.activeElement = target; ok(o && o.preventScroll === true, 'restore focus lacks preventScroll'); } };
+      const q0 = ctx.document.querySelector;
+      ctx.document.activeElement = { id: '', hasAttribute: a => a === 'data-tab', getAttribute: () => 'new', closest: () => null };
+      ctx.document.querySelector = sel => (sel === '[data-tab="new"]' ? target : null);
+      ctx.location.hash = '#home'; run('render()');
+      ctx.document.querySelector = q0; ctx.document.activeElement = null;
+      ok(focused === 1, 'render did not restore focus to the home tab, calls ' + focused);
+    }
+    ok(env.errors.length === 0, 'shell console.error: ' + env.errors.slice(0, 2).join(' | '));
+
+    /* single brief: ribbon grammar and the disabled neighbours */
+    const first = Object.keys(briefs)[0];
+    const one = await start({ config: { apiBase: '' }, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: { [first]: JSON.parse(JSON.stringify(briefs[first])) } }) }) });
+    ok(one.els.get('ribbon').textContent === 'v1.6.0 · 1 brief · container', 'single-brief ribbon is "' + one.els.get('ribbon').textContent + '"');
+    one.ctx.location.hash = '#home'; one.run('render()');
+    ok(!/1 briefs/.test(one.main().innerHTML) && /Active · 1 brief</.test(one.main().innerHTML), 'single-brief Home still says "1 briefs"');
+    one.ctx.location.hash = '#brief'; one.run('render()');
+    const bh = one.main().innerHTML;
+    ok((bh.match(/<span class="btn sm" aria-disabled="true"/g) || []).length === 2 && !/href="#"/.test(bh), 'disabled neighbours are not aria-disabled spans');
+
+    /* Reset clears everything the page stores */
+    env.run("setTheme('dark');fb.list=[{id:1}];store.set('feedback',fb.list);store.set('coll',['x']);store.set('sidecol',true);myAreas=new Set(['identity']);store.set('my',['identity'])");
+    ok(ctx.localStorage.getItem('aegis4-theme') === 'dark', 'precondition: theme not stored');
+    fire(env, 'click', { target: fakeTarget({ id: 'resetBtn' }) });
+    ok(ctx.localStorage.getItem('aegis4-theme') === null, 'Reset kept the theme');
+    ok(run('fb.list.length') === 0 && run("store.get('feedback',[]).length") === 0, 'Reset kept the feedback list');
+    ok(run("store.get('coll',[]).length") === 0 && run("store.get('sidecol',false)") === false && run('myAreas.size') === 0, 'Reset kept collapsed sections, sidebar state or areas');
+    ok(/Reset everything saved in this browser/.test(els.get('umenu').innerHTML), 'Reset button label not updated');
+    console.log('6. shell           skip link, hash normalise, Escape, menu roles/copy, focus restore, plural, disabled neighbours, full reset');
+  }
+  /* --- end regressions: shell --- */
 
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
