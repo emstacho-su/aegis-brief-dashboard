@@ -174,7 +174,7 @@ function fakeSupabase(db) {
     ok(env.run('BOOTED'), 'container (index) did not boot');
     ok(env.run('IDX.daily[0].__adopted===true'), 'server index was not adopted');
     const ribbon = env.els.get('ribbon').textContent;
-    ok(ribbon === `v1.5.0 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
+    ok(ribbon === `v1.6.0 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
     const c = renderAll(env, 'container/index');
     env.ctx.location.hash = '#archive'; env.run('render()');
     const arch = env.main().innerHTML;
@@ -230,6 +230,7 @@ function fakeSupabase(db) {
     gid('signinEmail').value = 'Analyst@syr.edu'; gid('signinPw').value = 'wrong';
     await env.run('signInWithPassword()');
     ok(fake.log.pw.length === 1 && /did not match/.test(env.els.get('signinStatus').textContent) && !env.run('SESSION'), 'wrong password handling');
+    ok(!gid('signinSubmit').disabled && gid('signinSubmit').getAttribute('aria-busy') === null && !gid('signinSubmit').classList.contains('busy'), 'submit button still busy after a failed sign-in');
     /* switch to the code path */
     env.run("showSignIn('code')");
     ok(/data-mode="code"/.test(env.main().innerHTML) && !/id="signinPw"/.test(env.main().innerHTML), 'code mode card missing');
@@ -253,7 +254,7 @@ function fakeSupabase(db) {
     fake.signIn({ access_token: 'tok', user: { id: uid, email: 'analyst@syr.edu' } });
     await sleep(80); await env.run('booting||Promise.resolve()'); await sleep(40);
     ok(env.run('BOOTED') && env.run('MODE') === 'static', 'static mode did not boot after sign-in');
-    ok(env.els.get('ribbon').textContent === `v1.5.0 · ${nBriefs} briefs · static`, 'static ribbon');
+    ok(env.els.get('ribbon').textContent === `v1.6.0 · ${nBriefs} briefs · static`, 'static ribbon');
     ok(env.els.get('avatarBtn').textContent === 'A' && /analyst@syr\.edu/.test(env.els.get('avatarBtn').getAttribute('aria-label')), 'avatar not updated');
     ok(env.run("myAreas.has('perimeter')&&stars.has('x1')") && env.ctx.document.documentElement.getAttribute('data-theme') === 'light', 'remote settings not applied');
     const c = renderAll(env, 'static');
@@ -310,6 +311,112 @@ function fakeSupabase(db) {
     await env.run('signOut()'); await sleep(40);
     console.log(`4. static+auth     sign-in screen (focus=email), OTP sent (shouldCreateUser=false), session -> loaded ${env.run('DATES.length')} briefs from table briefs + archive_index, settings pulled and upserted once (300ms debounce), feedback uploaded to ${up.path.replace(uid, '<uid>')} and inserted, sign out -> sign-in; views=${c.views} popouts=${c.popouts}`);
     console.log('   supabase calls: ' + [...new Set(fake.log.queries.map(q => q.table + ':' + q.ops.map(o => o[0]).join('.')))].join(', '));
+  }
+
+  /* 5. motion (v1.6.0, Wrike reference): skeleton while loading, enter animation keyed to route and intent changes,
+     FLIP glide fallback in a DOM without layout, popout close without an overlay element, busy buttons, sidebar
+     accordion markup, toast leaving phase */
+  {
+    const env = await start();
+    const { run, ctx, els } = env;
+    ok(run('reducedMotion()') === false, 'reducedMotion() is not false without matchMedia');
+    run("showLoading('Loading the brief archive…')");
+    const sk = env.main().innerHTML;
+    ok(/class="skel"/.test(sk) && /role="status"/.test(sk) && /class="spin"/.test(sk) && /Loading the brief archive/.test(sk), 'showLoading did not render the skeleton with a status line and spinner');
+    ok((sk.match(/class="b"/g) || []).length >= 24 && /aria-hidden="true"/.test(sk), 'skeleton bars missing or not hidden from assistive tech');
+    ok(run('lastViewKey') === null, 'showLoading did not reset the view key');
+    ctx.location.hash = '#home'; run('render()');
+    ok(els.get('main').classList.contains('enter'), 'first render did not add the enter class to #main');
+    ok(run('lastViewKey') === 'home|' + (run('state.area') || '') + '|' + run('state.date') + '|' + (run('state.report') || ''), 'view key is ' + run('lastViewKey'));
+    ok(/data-flip="area:/.test(env.main().innerHTML), 'area cards lack data-flip');
+    run("myAreas=new Set(['perimeter']);state.tab='mine';flipRender()");
+    const home = env.main().innerHTML;
+    ok(/data-flip="item:/.test(home), 'flipRender fallback did not render item cards with data-flip');
+    ok(/class="go" aria-hidden="true">open ↗</.test(home), 'item header lacks the hover-revealed open hint');
+    ok(/class="sub"><div class="in">/.test(els.get('side').innerHTML), 'sidebar groups lack the accordion wrapper');
+    /* a tab change marks the list for the enter animation once; the mark is cleared after the render */
+    run("state.anim={kind:'tab',key:'tabs'};render()");
+    ok(/class="secbody enter"/.test(env.main().innerHTML) && run('state.anim') === null, 'tab enter class not applied once');
+    run('render()');
+    ok(!/class="secbody enter"/.test(env.main().innerHTML), 'enter class leaked into the next render');
+    /* expanding an item marks only that item's body */
+    const id = run('BRIEFS[TODAY_S].items[0].item_id');
+    ctx.location.hash = '#brief';
+    run(`state.level.set('${id}',3);state.anim={kind:'expand',key:'${id}'};render()`);
+    const br = env.main().innerHTML;
+    ok((br.match(/class="xb enter"/g) || []).length === 1, 'expanded item body enter class');
+    ok(/class="go" aria-hidden="true">expand ▾</.test(br), 'collapsed brief items lack the expand hint');
+    /* popout close: the stub has no overlay element to animate, so it navigates straight back */
+    ctx.location.hash = '#item-' + id; run('render()');
+    ok(/role="dialog"/.test(els.get('ov').innerHTML), 'popout did not open');
+    run('closeOv()');
+    ok(ctx.location.hash === '#brief', 'closeOv did not return to the page hash, got ' + ctx.location.hash);
+    /* busy buttons */
+    const b = ctx.document.getElementById('busyProbe');
+    run("setBusy(document.getElementById('busyProbe'),true)");
+    ok(b.disabled === true && b.getAttribute('aria-busy') === 'true' && b.classList.contains('busy'), 'setBusy(on) state');
+    run("setBusy(document.getElementById('busyProbe'),false)");
+    ok(b.disabled === false && b.getAttribute('aria-busy') === null && !b.classList.contains('busy'), 'setBusy(off) state');
+    /* toast: the leaving phase is a new object carrying the same token */
+    run("setToast('hello','ok')");
+    ok(/class="fbtoast ok"/.test(els.get('fbroot').innerHTML) && typeof run('fb.toast.token') === 'number', 'toast not rendered with a token');
+    run('fb.toast={...fb.toast,leaving:true};fbRender()');
+    ok(/class="fbtoast ok leaving"/.test(els.get('fbroot').innerHTML), 'toast leaving class not rendered');
+    run('fb.toast=null;fbRender()');
+    /* popout: the entrance plays for a new item only; a re-render while it is open keeps the plain class */
+    ctx.location.hash = '#brief'; run('render()');
+    ctx.location.hash = '#item-' + id; run('render()');
+    ok(/class="ov enter"/.test(els.get('ov').innerHTML), 'popout entrance class missing on first render');
+    run('render()');
+    ok(/class="ov"/.test(els.get('ov').innerHTML) && !/ov enter/.test(els.get('ov').innerHTML), 'popout entrance replayed on re-render');
+    /* a direct #item- link after the loader: the page behind the overlay is painted, not left as the skeleton */
+    run('showLoading()');
+    ok(/class="skel"/.test(env.main().innerHTML), 'skeleton not shown');
+    run('render()');
+    ok(!/class="skel"/.test(env.main().innerHTML) && /role="dialog"/.test(els.get('ov').innerHTML), 'skeleton left behind the popout');
+    /* same-route re-renders do not re-add the enter class; a route change does */
+    const mainEl = els.get('main'); let adds = 0; const origAdd = mainEl.classList.add; mainEl.classList.add = c => { if (c === 'enter') adds++; return origAdd(c); };
+    ctx.location.hash = '#home'; run('render()'); run('render()'); run('render()');
+    ok(adds === 1, `enter added ${adds} times for one route change and two re-renders`);
+    ctx.location.hash = '#brief'; run('render()');
+    ok(adds === 2, 'route change did not re-add enter');
+    mainEl.classList.add = origAdd;
+    /* FLIP with a measurable DOM: a hidden (zero-rect) card is new, a moved card glides, an unmoved card and a card
+       inside an entering section are left alone */
+    const mkEl = (key, rects, parentEnter) => { let i = 0; const cls = new Set(); const calls = []; return { dataset: { flip: key }, calls, classList: { add: c => cls.add(c), contains: c => cls.has(c), remove: c => cls.delete(c) }, parentElement: { closest: () => (parentEnter ? {} : null) }, getBoundingClientRect: () => rects[Math.min(i++, rects.length - 1)], animate: (kf, o) => { calls.push([kf[0].transform, o.duration]); } }; };
+    const rect = (top, left, w = 100, h = 40) => ({ top, left, width: w, height: h, bottom: top + h, right: left + w });
+    const hidden = mkEl('item:h', [rect(0, 0, 0, 0), rect(120, 10)]);
+    const moved = mkEl('item:m', [rect(100, 10), rect(300, 10)]);
+    const still = mkEl('item:s', [rect(400, 10), rect(400, 10)]);
+    const carried = mkEl('item:c', [rect(500, 10), rect(700, 10)], true);
+    const fakes = [hidden, moved, still, carried];
+    const origQSA = ctx.document.querySelectorAll;
+    ctx.document.querySelectorAll = sel => (sel === '[data-flip]' ? fakes : []);
+    run('flipRender()');
+    ctx.document.querySelectorAll = origQSA;
+    ok(hidden.classList.contains('enter') && hidden.calls.length === 0, 'zero-rect card was not treated as new');
+    ok(moved.calls.length === 1 && moved.calls[0][0] === 'translate(0px,-200px)' && moved.calls[0][1] === 220, 'moved card did not glide from its old slot: ' + JSON.stringify(moved.calls));
+    ok(still.calls.length === 0 && !still.classList.contains('enter'), 'unmoved card was animated');
+    ok(carried.calls.length === 0 && !carried.classList.contains('enter'), 'card inside an entering section was animated on its own');
+    /* closeOv with an overlay element: leaving class first, hash after the delay; a navigation made meanwhile wins */
+    const ovCls = new Set(); const fakeOv = { classList: { add: c => ovCls.add(c), contains: c => ovCls.has(c), remove: c => ovCls.delete(c) } };
+    const origQS = ctx.document.querySelector;
+    ctx.document.querySelector = sel => (sel === '#ov .ov' ? fakeOv : null);
+    ctx.location.hash = '#home'; run('render()');
+    ctx.location.hash = '#item-' + id; run('render()');
+    run('closeOv()');
+    ok(ovCls.has('leaving') && ctx.location.hash === '#item-' + id, 'closeOv did not fade before navigating');
+    await sleep(200);
+    ok(ctx.location.hash === '#home', 'closeOv did not navigate after the fade, hash ' + ctx.location.hash);
+    ovCls.clear();
+    ctx.location.hash = '#item-' + id; run('render()');
+    run('closeOv()'); ctx.location.hash = '#item-other';
+    await sleep(200);
+    ok(ctx.location.hash === '#item-other' && run('ovClosing') === false, 'closeOv overrode a navigation made during its fade');
+    ctx.document.querySelector = origQS;
+    ctx.location.hash = '#home'; run('render()');
+    ok(env.errors.length === 0, `motion console.error: ${env.errors.slice(0, 3).join(' | ')}`);
+    console.log('5. motion          skeleton + status line, enter keyed to route/tab/expand, FLIP fallback, closeOv, busy buttons, accordion markup, toast leaving');
   }
 
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');

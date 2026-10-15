@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>AEGIS Brief Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -106,7 +107,7 @@ h1,h2,h3{text-wrap:balance}
 .umenu .sep{border-top:1px solid var(--border-muted)}
 .umenu .dis{color:var(--text-muted);cursor:not-allowed}
 .umenu .c{font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
-.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:calc(100vh - 56px)}
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:calc(100vh - 56px);transition:grid-template-columns .18s ease}
 .side{background:var(--bg-primary);border-right:1px solid var(--border);padding:.9rem .7rem 1.5rem;position:sticky;top:0;height:calc(100vh - 56px);overflow-y:auto}
 .side .tgl{margin:0}
 .side .tgl button{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;padding:0}
@@ -133,8 +134,14 @@ h1,h2,h3{text-wrap:balance}
 .side .grp .hd2{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.42rem .6rem;border-radius:var(--radius-md);color:var(--text-primary);font-size:13px;font-weight:600;cursor:pointer;width:100%;text-align:left}
 .side .grp .hd2:hover{background:var(--bg-hover)}
 .side .grp .hd2 .chev{font-family:var(--font-mono);font-size:11px;color:var(--text-muted)}
-.side .grp .sub{display:none;padding:.1rem 0 .3rem .5rem}
-.side .grp.open .sub{display:block}
+/* v1.6.0: the group accordion animates its height (0fr -> 1fr on the grid track); the inner wrapper clips, and
+   visibility keeps closed links out of the tab order the way display:none used to. The wrapper's 5px of room
+   (padding pulled back by a negative margin, link margins top and bottom) keeps the 3px + 2px focus ring unclipped. */
+.side .grp .sub{display:grid;grid-template-rows:0fr;transition:grid-template-rows .18s ease;padding-left:.5rem}
+.side .grp.open .sub{grid-template-rows:1fr}
+.side .grp .sub>.in{overflow:hidden;min-height:0;visibility:hidden;transition:visibility .18s;padding:0 5px;margin:0 -5px}
+.side .grp.open .sub>.in{visibility:visible}
+.side .grp .sub>.in>.lnk:first-child{margin-top:5px}.side .grp .sub>.in>.lnk:last-child{margin-bottom:5px}
 .side .sub .lnk{padding:.3rem .6rem .3rem .9rem;font-size:12.5px;font-weight:400}
 .side .dotc{font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
 .side .dotc.hot{color:var(--sev-critical)}
@@ -150,9 +157,11 @@ h1,h2,h3{text-wrap:balance}
 .pmeta{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.6rem 1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;font-size:12px}
 .pmeta .k{font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin-right:.35rem}
 .ribbon{font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--external);border:1px dashed rgba(88,166,255,.5);padding:2px 7px;border-radius:var(--radius-sm);white-space:nowrap}
-.btn{font-family:var(--font-ui);background:var(--bg-primary);border:1px solid var(--border-ctrl);border-radius:var(--radius-md);color:var(--text-primary);font-size:12px;padding:.3rem .7rem;transition:border-color .15s;text-decoration:none;display:inline-block;line-height:1.3}
+.btn{font-family:var(--font-ui);background:var(--bg-primary);border:1px solid var(--border-ctrl);border-radius:var(--radius-md);color:var(--text-primary);font-size:12px;padding:.3rem .7rem;transition:border-color .15s,color .15s,background-color .15s,transform .1s,filter .15s;text-decoration:none;display:inline-block;line-height:1.3}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn:active{transform:translateY(1px)}
 .btn.sm{font-size:11px;padding:.15rem .5rem}
 
 /* Page scaffolding */
@@ -286,7 +295,7 @@ select.sel{font:inherit;font-size:12px;background:var(--bg-canvas);border:1px so
 .circ.lg{width:38px;height:38px}.circ.lg b{font-size:13px}
 
 /* Item collapsed header */
-.item{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);min-width:0;position:relative;transition:border-color .15s}
+.item{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);min-width:0;position:relative;transition:border-color .15s,opacity .15s}
 .item:hover{border-color:var(--border-hover)}
 .item.t1{border-left:3px solid var(--sev-critical)}
 .hd{display:flex;align-items:center;gap:.75rem;padding:.55rem .8rem;cursor:pointer;min-width:0}
@@ -451,7 +460,7 @@ tr.rowlink{cursor:pointer}tr.rowlink:hover td{background:var(--bg-secondary)}
 .tl2 .tip{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);min-width:170px;max-width:260px;background:var(--bg-secondary);border:1px solid var(--border-hover);border-radius:var(--radius-md);padding:.45rem .6rem;font-size:12px;color:var(--text-primary);box-shadow:var(--shadow);display:none;z-index:5;pointer-events:none;white-space:normal;line-height:1.35}
 .tl2 .tip .d{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:2px}
 .tl2 .tip .s{color:var(--text-secondary);font-size:11.5px}
-.tl2 .ev:hover .tip,.tl2 .ev:focus .tip,.tl2 .ev:focus-visible .tip{display:block}
+.tl2 .ev:hover .tip,.tl2 .ev:focus .tip,.tl2 .ev:focus-visible .tip{display:block;animation:fade-in .12s ease-out backwards}
 .tl2.notips .tip{display:none!important}
 .tl2 .ev.edge-l .tip{left:0;transform:none}.tl2 .ev.edge-r .tip{left:auto;right:0;transform:none}
 .tl2 .cur{position:absolute;top:100px;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;color:var(--text-primary);background:var(--bg-active);border:1px solid var(--border-hover);border-radius:var(--radius-sm);padding:0 5px;pointer-events:none;display:none;z-index:4}
@@ -485,7 +494,50 @@ footer .accent{color:var(--accent)}
 .fbtoast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:16px;z-index:76;max-width:min(440px,calc(100vw - 32px));background:var(--bg-primary);border:1px solid var(--border-hover);border-left:3px solid var(--accent);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:.55rem .75rem;font-size:13px;display:flex;gap:.6rem;align-items:center}
 .fbtoast.err{border-left-color:var(--down)}.fbtoast.ok{border-left-color:var(--ok)}
 .fbtoast span{flex:1;min-width:0}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* v1.6.0 motion, after the Wrike reference: a skeleton shaped like Home while the archive loads, enter animations keyed
+   to route and intent changes (not to every re-render), FLIP glide for cards that move (flipRender), hover-revealed
+   item controls, menu, popout and toast transitions. Enter keyframes declare only "from" and fill backwards, so an
+   element lands on its normal styles and hover transforms keep working. Everything collapses to instant under
+   prefers-reduced-motion (last rule in the sheet). */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes skel-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes view-in{from{opacity:0;transform:translateY(6px)}}
+@keyframes pop-in{from{opacity:0;transform:translateY(10px) scale(.985)}}
+@keyframes fade-in{from{opacity:0}}
+@keyframes fade-out{to{opacity:0}}
+@keyframes menu-in{from{opacity:0;transform:translateY(-4px)}}
+@keyframes drop-in{from{opacity:0;transform:translate(-50%,-8px)}}
+@keyframes toast-in{from{opacity:0;transform:translateY(10px)}}
+@keyframes toast-out{to{opacity:0;transform:translateY(6px)}}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border-hover);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;vertical-align:middle}
+.spin.lg{width:28px;height:28px;border-width:3px}
+.skel .ld{display:flex;align-items:center;gap:.6rem;color:var(--text-secondary);font-size:13px;min-height:28px}
+.skel .b{display:block;height:10px;border-radius:var(--radius-sm);background:var(--bg-hover);animation:skel-pulse 1.4s ease-in-out infinite;margin:.3rem 0}
+.skel .acard{cursor:default;pointer-events:none}.skel .acard .in{padding:.7rem .85rem .6rem}
+.skel .tabs{padding:.4rem .25rem;gap:.6rem}.skel .tabs .b{margin:.2rem .25rem}
+.skel .ev{align-items:center}.skel .ev .b{margin:.2rem 0}
+#main.enter,.xb.enter,.secbody.enter,[data-flip].enter{animation:view-in .18s ease-out backwards}
+.ov.enter{animation:fade-in .15s ease-out backwards}
+.ov.leaving{animation:fade-out .12s ease-in forwards;pointer-events:none}
+.ov.enter .panel,.fbpanel .panel,.panel.signin{animation:pop-in .18s cubic-bezier(.2,.7,.2,1) backwards}
+.umenu,.sres{animation:menu-in .1s ease-out backwards;transform-origin:top right}
+.fbhint{animation:drop-in .18s ease-out backwards}
+.fbov{animation:fade-in .15s ease-out backwards}
+.fbtoast{animation:toast-in .18s ease-out backwards}
+.fbtoast.leaving{animation:toast-out .18s ease-in forwards}
+.btn.busy{position:relative;color:transparent!important;pointer-events:none}
+.btn.busy::after{content:"";position:absolute;inset:0;margin:auto;width:14px;height:14px;border:2px solid var(--border-ctrl);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.btn.primary.busy::after{border-color:rgba(128,128,128,.45);border-top-color:var(--on-accent)}
+.hd .tb{position:relative}
+.hd .go{position:absolute;right:0;top:.2em;padding-left:.45rem;background:var(--bg-primary);font-family:var(--font-mono);font-size:10px;line-height:1.6;color:var(--text-dim);white-space:nowrap;opacity:0;transition:opacity .15s ease;pointer-events:none}
+.item:hover .hd .go,.hd:focus-visible .go{opacity:1}
+@media (max-width:600px),(hover:none){.hd .go{display:none}}
+.side .lnk,.side .grp .hd2,.side .tgl button,.tabs button,.chip,.achip,.col,.copy,.starb,.panel .close,.avatar,.plus,.menubtn,.sec-h .tools button,.sec-h .tools a,.picker .chk,.umenu a,.umenu button,.sres .r,tr.rowlink td,.ev .t a,.tile{transition:background-color .12s ease,color .12s ease,border-color .12s ease}
+.chart .clk{transition:opacity .12s ease}
+.tile:hover{border-color:var(--border-hover)}
+.acard:active,.rcardi:active,.rcard:active{transform:translateY(0);transition-duration:.06s}
+html.theming,html.theming *{transition:background-color .22s ease,color .22s ease,border-color .22s ease!important}
+@media (prefers-reduced-motion:reduce){*,::before,::after{transition:none!important;animation-duration:.01ms!important;animation-iteration-count:1!important;animation-delay:0s!important}}
 </style>
 
 <a class="skip" href="#main">Skip to content</a>
@@ -494,7 +546,7 @@ footer .accent{color:var(--accent)}
   <div style="display:flex;align-items:center;gap:.5rem;min-width:0"><button class="menubtn" id="menubtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side">☰</button><div class="brand">SU InfoSec<span class="pipe">|</span>AEGIS Daily Brief</div></div>
   <div class="hdr-right">
     <div class="search"><input id="q" type="search" placeholder="Search items, CVEs" autocomplete="off" aria-label="Search items"><div class="sres" id="sres" hidden></div></div>
-    <span class="ribbon" id="ribbon">v1.5.0</span>
+    <span class="ribbon" id="ribbon">v1.6.0</span>
     <button class="plus" id="fbBtn" title="Report a bug or request a change" aria-label="Report a bug or request a change"><span aria-hidden="true">+</span></button>
     <button class="avatar" id="avatarBtn" aria-expanded="false" aria-haspopup="menu" aria-label="Account menu" title="Account">A</button>
     <div class="umenu" id="umenu" hidden role="menu"></div>
@@ -702,7 +754,7 @@ function buildIndex(){
    3. State, storage, routing
    ========================================================================= */
 (function(){try{const t=localStorage.getItem('aegis4-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
-const state={pick:false,page:'home',date:TODAY_S,area:null,report:null,tab:'mine',level:new Map(),ctx:new Set(),f:{area:null,tier:null,status:null,source:null,period:30},sel:null,cum:false,streamAll:false};
+const state={pick:false,page:'home',date:TODAY_S,area:null,report:null,tab:'mine',level:new Map(),ctx:new Set(),f:{area:null,tier:null,status:null,source:null,period:30},sel:null,cum:false,streamAll:false,anim:null};
 /* Browser cache, namespaced per signed-in user so two people sharing a browser never see or seed each other's
    state. Anonymous (no auth, sample or container mode without Supabase) uses the 'anon' namespace. The theme hint
    (aegis4-theme) stays global on purpose: it is read before auth to avoid a flash, and the user's own theme
@@ -753,12 +805,15 @@ const circ=(s,lg,parts)=>`<span class="circ ${lg?'lg':''}" style="--p:${s}" role
 const idn=it=>it.identifiers[0]?`<div class="idn">${esc(it.identifiers[0])}</div>`:'';
 const areaChips=(as)=>as.map(a=>`<a class="achip" href="#area-${a}">${esc(AREAS[a].name)}</a>`).join('');
 const kindG=k=>`<span class="kind">${esc(k)}</span>`;
+/* v1.6.0: state.anim is a one-shot {kind,key} set by the click that caused this render (tab, coll, expand); the
+   matching element gets the enter animation once and render() clears the mark. */
+const animOn=(kind,key)=>!!(state.anim&&state.anim.kind===kind&&state.anim.key===key);
 
 function itemCard(it,o={}){
   const L=o.forceLevel!==undefined?o.forceLevel:lvl(it);const hasEsc=it.escalation.required;const star=stars.has(it.item_id);
   if(L===0){
-    return `<article class="item t${it.tier} ${it._carried?'carried':''}" data-id="${esc(it.item_id)}"><div class="hd" role="button" tabindex="0" data-${o.directOpen?'open':'expand'}="${esc(it.item_id)}">
-      ${badgeSev(it.priority)}<div class="tb"><div class="ttl">${star?'<span style="color:var(--accent)">★</span> ':''}${esc(it.title)}</div>${idn(it)}${o.showAreas?`<div class="ar">${areaChips(it.areas)}</div>`:''}</div>
+    return `<article class="item t${it.tier} ${it._carried?'carried':''}" data-id="${esc(it.item_id)}" data-flip="item:${esc(it.item_id)}"><div class="hd" role="button" tabindex="0" data-${o.directOpen?'open':'expand'}="${esc(it.item_id)}">
+      ${badgeSev(it.priority)}<div class="tb"><div class="ttl">${star?'<span style="color:var(--accent)">★</span> ':''}${esc(it.title)}</div>${idn(it)}${o.showAreas?`<div class="ar">${areaChips(it.areas)}</div>`:''}<span class="go" aria-hidden="true">${o.directOpen?'open ↗':'expand ▾'}</span></div>
       <div class="rs"><span class="l">${hasEsc?'<span class="pill esc">Esc</span>':''}${o.showTier?`<span class="pill">T${it.tier}</span>`:''}${pillStatus(it)}</span>${it.tlp==='clear'?'':tlpBadge(it.tlp)}</div>${circ(it.score)}</div></article>`;
   }
   let body=`<p class="desc ${L<3?'clamp':''}">${esc(it.description)}</p>`;
@@ -767,9 +822,9 @@ function itemCard(it,o={}){
   if(it.recommended_actions.length)body+=`<div class="box"><div class="bl">Recommended actions</div><ol>${it.recommended_actions.map(a=>`<li>${esc(a)}</li>`).join('')}</ol></div>`;
   if(it.delta)body+=`<div class="box"><div class="bl">Delta</div><p>${esc(it.delta)}</p></div>`;
   if(hasEsc)body+=`<div class="box esc"><div class="bl">Escalation</div><p><b>To:</b> ${esc(it.escalation.to)}${it.escalation.note?` · ${esc(it.escalation.note)}`:''}</p></div>`;
-  return `<article class="item t${it.tier}" data-id="${esc(it.item_id)}">${tabStatus(it)}<div class="xc" role="button" tabindex="0" data-open="${esc(it.item_id)}" title="Open detail">
+  return `<article class="item t${it.tier}" data-id="${esc(it.item_id)}" data-flip="item:${esc(it.item_id)}">${tabStatus(it)}<div class="xc" role="button" tabindex="0" data-open="${esc(it.item_id)}" title="Open detail">
     <div class="xh"><div class="tb"><div class="ttl">${star?'<span style="color:var(--accent)">★</span> ':''}${esc(it.title)}</div>${idn(it)}<div class="ar">${areaChips(it.areas)}</div></div><div class="sc">${circ(it.score,true,it.score_parts)}<span class="pr ${esc(it.priority)}">${esc(it.priority)}</span></div></div>
-    <div class="xb">${body}</div>
+    <div class="xb${animOn('expand',it.item_id)?' enter':''}">${body}</div>
     <div class="xf">${hasEsc?'<span class="pill esc">Esc</span><span class="dot"></span>':''}${tlpBadge(it.tlp)}<span class="dot"></span><span>Source: <a href="${esc(it.source.url)}" target="_blank" rel="noopener">${esc(it.source.name)}</a></span><span class="dot"></span><span>${esc(it.source.retrieved)}</span><span class="sp"></span><span class="hint">click card for detail</span><button class="col" data-collapse="${esc(it.item_id)}" aria-label="Collapse">▴</button></div></div></article>`;
 }
 function tile(k,v,delta,cls=''){let d='';if(delta!==undefined&&delta!==null){const n=Number(delta);d=`<span class="d ${n>0?'up':n<0?'down':''}">${n>0?'▲':n<0?'▼':'='} ${Math.abs(n)}</span>`}return `<div class="tile ${cls}"><div class="k">${esc(k)}</div><div class="v num">${v}${d}</div></div>`}
@@ -898,7 +953,7 @@ function areaStats(k,b){
   return {items,t1,nw,escN,acts,maxPri,series,lastT1,active,maxScore:Math.max(0,...items.map(i=>i.score))};
 }
 function areaCard(k){const a=AREAS[k],s=areaStats(k,BRIEFS[TODAY_S]);const mine=myAreas.has(k);
-  return `<a class="acard ${s.t1?'hot':''}" href="#area-${k}" ${s.t1?`title="${s.t1} Tier 1 item${s.t1===1?'':'s'} in this area today"`:''}><div class="rail-c ${s.maxPri}"></div>${s.t1>1?`<span class="corner" title="${s.t1} Tier 1 items in this area today">!</span>`:''}<div class="in"><div class="nm">${mine?'<span class="star" title="My area">★</span>':''}${esc(a.name)}</div><div class="st">${s.items.length} today · ${s.active.length} active across ${Math.min(RELEVANT_WINDOW,DATES.length)} briefs${s.items.length?` · top ${s.maxScore}`:''}</div>
+  return `<a class="acard ${s.t1?'hot':''}" href="#area-${k}" data-flip="area:${k}" ${s.t1?`title="${s.t1} Tier 1 item${s.t1===1?'':'s'} in this area today"`:''}><div class="rail-c ${s.maxPri}"></div>${s.t1>1?`<span class="corner" title="${s.t1} Tier 1 items in this area today">!</span>`:''}<div class="in"><div class="nm">${mine?'<span class="star" title="My area">★</span>':''}${esc(a.name)}</div><div class="st">${s.items.length} today · ${s.active.length} active across ${Math.min(RELEVANT_WINDOW,DATES.length)} briefs${s.items.length?` · top ${s.maxScore}`:''}</div>
     <div class="ql">Quick links</div><div class="lk"><span>Action required</span><span class="pc ${s.t1?'hot':''}">${s.t1}</span></div><div class="lk"><span>New today</span><span class="pc ${s.nw?'new':''}">${s.nw}</span></div><div class="lk"><span>Carried, not in today's brief</span><span class="pc">${s.active.filter(i=>i._carried).length}</span></div><div class="lk"><span>${actionLike(BRIEFS[TODAY_S],k).label}</span><span class="pc ${HAS_REAL&&s.acts?'hot':''}">${s.acts}</span></div>
     <div class="ft"><span>${s.lastT1===null?'no Tier 1 in 30d':s.lastT1===0?'Tier 1 today':`last Tier 1: ${s.lastT1}d ago`}</span>${sparkline(s.series)}</div></div></a>`;
 }
@@ -924,9 +979,9 @@ function renderHome(){
   <div class="counts">${tile('Items today',b.items.length,b.items.length-y.items.length)}${tile(`Active · ${Math.min(RELEVANT_WINDOW,DATES.length)} briefs`,activeItems().length)}${tile('Tier 1',cnt(b,i=>i.tier===1),cnt(b,i=>i.tier===1)-cnt(y,i=>i.tier===1),'t1')}${tile('New today',cnt(b,i=>i.status==='new'))}${tile('Escalations',cnt(b,i=>i.escalation.required),null,'esc')}${tile(actionLike(b).label,actionLike(b).count,actionLike(b).count-actionLike(y).count)}${b.threat_level?tile('Threat level',`<span class="pr ${b.threat_level==='CRITICAL'?'critical':b.threat_level==='HIGH'?'high':'medium'}" style="font-size:14px">${esc(b.threat_level)}</span>`):''}${tile('Avg item age',IDX.daily[TODAY].avgAge.toFixed(1)+'<span class="muted" style="font-size:12px;font-weight:400">d</span>')}</div>
   <div class="sec-h"><h2>Areas<span class="sub">${myAreas.size?'yours first, then by highest priority':'sorted by highest priority today; pick yours below'} · active = seen in the last ${Math.min(RELEVANT_WINDOW,DATES.length)} briefs</span></h2><div class="tools"><a href="#trends-byarea">30d by area</a></div></div>
   <div class="areas">${order.map(areaCard).join('')}</div>
-  <section class="sec ${state.coll.has('tabs')?'is-collapsed':''}" id="sec-tabs"><div class="tabs collh ${state.coll.has('tabs')?'is-collapsed':''}" role="tablist" data-coll="tabs" title="Click the blank area to ${state.coll.has('tabs')?'expand':'collapse'}">${tabs.map(([k,l,c])=>`<button role="tab" aria-selected="${state.tab===k}" data-tab="${k}">${l}${c!=null?`<span class="c">${c}</span>`:''}</button>`).join('')}<span class="hint" aria-hidden="true">${state.coll.has('tabs')?'collapsed · click to expand':'click to collapse'}</span><button class="ktg" data-collbtn="tabs" aria-expanded="${!state.coll.has('tabs')}" aria-controls="sec-tabs">${state.coll.has('tabs')?'Expand list':'Collapse list'}</button></div><div class="secbody">${list}</div></section>
+  <section class="sec ${state.coll.has('tabs')?'is-collapsed':''}" id="sec-tabs"><div class="tabs collh ${state.coll.has('tabs')?'is-collapsed':''}" role="tablist" data-coll="tabs" title="Click the blank area to ${state.coll.has('tabs')?'expand':'collapse'}">${tabs.map(([k,l,c])=>`<button role="tab" aria-selected="${state.tab===k}" data-tab="${k}">${l}${c!=null?`<span class="c">${c}</span>`:''}</button>`).join('')}<span class="hint" aria-hidden="true">${state.coll.has('tabs')?'collapsed · click to expand':'click to collapse'}</span><button class="ktg" data-collbtn="tabs" aria-expanded="${!state.coll.has('tabs')}" aria-controls="sec-tabs">${state.coll.has('tabs')?'Expand list':'Collapse list'}</button></div><div class="secbody${animOn('tab','tabs')||animOn('coll','tabs')?' enter':''}">${list}</div></section>
   <section class="sec ${state.coll.has('stream')?'is-collapsed':''}" id="sec-stream"><div class="sec-h collh ${state.coll.has('stream')?'is-collapsed':''}" data-coll="stream" title="Click the blank area to ${state.coll.has('stream')?'expand':'collapse'}"><h2>Activity stream<span class="sub">${state.f.area?AREAS[state.f.area].name:'all areas'} · ${state.streamAll?'30 days':'today and yesterday'}</span></h2><span class="hint" aria-hidden="true">${state.coll.has('stream')?'collapsed · click to expand':'click to collapse'}</span><button class="ktg" data-collbtn="stream" aria-expanded="${!state.coll.has('stream')}" aria-controls="sec-stream">${state.coll.has('stream')?'Expand stream':'Collapse stream'}</button><div class="tools"><select class="sel" data-f="area" style="font-size:11px;padding:.1rem .3rem" aria-label="Filter stream by area"><option value="">All areas</option>${Object.entries(AREAS).map(([k,a])=>`<option value="${k}" ${state.f.area===k?'selected':''}>${esc(a.name)}</option>`).join('')}</select></div></div>
-    <div class="secbody"><div class="stream">${streamHtml(shown)}${!state.streamAll&&evts.length>shown.length?`<div style="padding:.5rem 0"><button class="btn sm" data-streamall>Show all 30 days (${evts.length})</button></div>`:''}</div></div></section>${healthStrip(b)}`;
+    <div class="secbody${animOn('coll','stream')?' enter':''}"><div class="stream">${streamHtml(shown)}${!state.streamAll&&evts.length>shown.length?`<div style="padding:.5rem 0"><button class="btn sm" data-streamall>Show all 30 days (${evts.length})</button></div>`:''}</div></div></section>${healthStrip(b)}`;
 }
 function renderArea(){
   const k=state.area;if(!AREAS[k])return `<div class="banner-err">Unknown area.</div>`;const a=AREAS[k],b=BRIEFS[TODAY_S],s=areaStats(k,b);
@@ -944,7 +999,7 @@ function renderArea(){
   <aside class="rail">${railStanding(b,k)}
   <section class="sec"><div class="sec-h"><h2>Activity<span class="sub">30 days</span></h2></div><div class="stream">${streamHtml(evts)}</div></section></aside></div>${healthStrip(b)}`;
 }
-function relCard(it){const hasEsc=it.escalation.required;return `<div class="rcardi t${it.tier}" role="button" tabindex="0" data-open="${esc(it.item_id)}"><div class="r1"><span class="l">${badgeSev(it.priority)}<span class="pill">T${it.tier}</span>${hasEsc?'<span class="pill esc">Esc</span>':''}</span>${pillStatus(it)}</div><div class="ttl">${stars.has(it.item_id)?'<span style="color:var(--accent)">★</span> ':''}${esc(it.title)}</div>${idn(it)}<div class="r3"><span class="l">${areaChips(it.areas.filter(a=>myAreas.has(a)))}${it.tlp==='clear'?'':tlpBadge(it.tlp)}</span>${circ(it.score)}</div></div>`}
+function relCard(it){const hasEsc=it.escalation.required;return `<div class="rcardi t${it.tier}" role="button" tabindex="0" data-open="${esc(it.item_id)}" data-flip="rel:${esc(it.item_id)}"><div class="r1"><span class="l">${badgeSev(it.priority)}<span class="pill">T${it.tier}</span>${hasEsc?'<span class="pill esc">Esc</span>':''}</span>${pillStatus(it)}</div><div class="ttl">${stars.has(it.item_id)?'<span style="color:var(--accent)">★</span> ':''}${esc(it.title)}</div>${idn(it)}<div class="r3"><span class="l">${areaChips(it.areas.filter(a=>myAreas.has(a)))}${it.tlp==='clear'?'':tlpBadge(it.tlp)}</span>${circ(it.score)}</div></div>`}
 function relevantSection(b){
   const picker=`<div class="picker"><span class="sec2" style="font-size:12px">${myAreas.size?'My areas:':'Pick the areas you work in to see your items here first.'}</span>${Object.entries(AREAS).map(([k,a])=>`<button class="chk ${myAreas.has(k)?'on':''}" data-my="${k}">${myAreas.has(k)?'★':'☆'} ${esc(a.name)}</button>`).join('')}</div>`;
   if(!myAreas.size)return `<section class="sec"><div class="sec-h"><h2>Relevant to my areas</h2></div>${picker}</section>`;
@@ -1094,11 +1149,11 @@ function trajectory(L){const n=L.scores.length;if(n<2)return `<div class="empty"
   L.escDays.forEach(d=>{const i=L.days.indexOf(d);s+=`<text x="${X(i)}" y="${Y(L.scores[i])-8}" text-anchor="middle" style="font-family:var(--font-mono);font-size:10px;fill:var(--sev-critical);font-weight:600">!</text>`});
   s+=`<text x="${PLx}" y="${H-4}" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[0]}</text><text x="${W-PRx}" y="${H-4}" text-anchor="end" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[n-1]}</text></svg><div class="legend"><span><i class="i-line"></i>score</span><span><i class="i-t1"></i>Tier 1</span><span><i class="i-t2"></i>Tier 2</span><span><i class="i-t3"></i>Tier 3</span><span class="mono" style="color:var(--sev-critical)">!</span><span class="muted">escalation</span></div>`;
 }
-function renderDetail(id){
-  const x=itemAny(id);if(!x)return `<div class="ov" id="ovbg"><div class="panel"><button class="close" data-close>close ✕</button><div class="empty">No item with that id in the archive.</div></div></div>`;
+function renderDetail(id,enter){ /* enter: first render of this item; a re-render while it is open must not replay the entrance */
+  const ovc=enter?'ov enter':'ov';const x=itemAny(id);if(!x)return `<div class="${ovc}" id="ovbg"><div class="panel"><button class="close" data-close>close ✕</button><div class="empty">No item with that id in the archive.</div></div></div>`;
   const it=x.it,L=IDX.life[id],b=BRIEFS[x.date],hasEsc=it.escalation.required,star=stars.has(id);
   const evts=IDX.events.filter(e=>e.id===id).sort((p,q)=>q.date.localeCompare(p.date));
-  return `<div class="ov" id="ovbg"><div class="panel" role="dialog" aria-modal="true" aria-label="${esc(it.title)}"><button class="close" data-close>close ✕</button>
+  return `<div class="${ovc}" id="ovbg"><div class="panel" role="dialog" aria-modal="true" aria-label="${esc(it.title)}"><button class="close" data-close>close ✕</button>
     <div class="crumb"><span>${x.date===TODAY_S?'In today\'s brief':`Last in brief ${x.date}`}</span><span>›</span><span>Tier ${it.tier} · ${TIER_NAME[it.tier]}</span><span>›</span>${kindG(it.kind)}</div>
     <div class="pph"><div class="tb"><h2>${esc(it.title)}</h2>${it.identifiers.length?`<div class="idn">${it.identifiers.map(esc).join(' · ')}</div>`:''}<div class="tags">${badgeSev(it.priority)}${pillStatus(it)}${hasEsc?'<span class="pill esc">Esc</span>':''}${tlpBadge(it.tlp)}${it.confidence?`<span class="pill">conf ${esc(it.confidence)}</span>`:''}${areaChips(it.areas)}<button class="starb ${star?'on':''}" data-star="${esc(id)}">${star?'★ Starred':'☆ Star'}</button>${x.date!==TODAY_S?`<a class="btn sm" href="#brief-${x.date}">Open brief ${x.date}</a>`:''}</div></div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:2px">${circ(it.score,true)}<span class="pr ${esc(it.priority)}">${esc(it.priority)}</span></div></div>
@@ -1123,7 +1178,7 @@ rank 2  chunk c_1a07  doc d_feeds/${esc(it.source.name.toLowerCase().replace(/\s
 /* =========================================================================
    7. Notes, mount, events
    ========================================================================= */
-function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.5.0 · ${DATES.length} briefs · ${MODE}`:'v1.5.0'}
+function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.6.0 · ${DATES.length} briefs · ${MODE}`:'v1.6.0'}
 state.coll=new Set(store.get('coll',[]));state.side=new Set();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
 const I={
  home:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -1151,7 +1206,7 @@ function renderSide(){
     ${lnk('#brief','brief',"Today's brief",is('brief',state.date===TODAY_S),`<span class="dotc">${esc(TODAY_S.slice(5))}</span>`,'top')}
     ${groups.map(([k,l,icon,href,inner,auto])=>{const open=state.side.has(k)||(auto&&!state.side.has('!'+k));return col
       ?`<div class="grp"><a class="hd2 ${auto?'on':''}" href="${href}" title="${l}"><span class="lb">${I[icon]}</span></a></div>`
-      :`<div class="grp ${open?'open':''}"><button class="hd2" data-grp="${k}" aria-expanded="${open}"><span class="lb">${I[icon]}<span class="tx">${l}</span></span><span class="chev">${open?'▴':'▾'}</span></button><div class="sub">${inner}</div></div>`}).join('')}
+      :`<div class="grp ${open?'open':''}"><button class="hd2" data-grp="${k}" aria-expanded="${open}"><span class="lb">${I[icon]}<span class="tx">${l}</span></span><span class="chev">${open?'▴':'▾'}</span></button><div class="sub"><div class="in">${inner}</div></div></div>`}).join('')}
     ${lnk('#trends','trends','Trends',is('trends'),state.report?`<span class="dotc">${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}</span>`:'','top')}</nav>`;
   const side=document.getElementById('side');side.classList.toggle('open',state.sideOpen);side.classList.toggle('collapsed',col);
   const shell=document.querySelector('.shell');if(shell)shell.classList.toggle('collapsed',col);
@@ -1180,7 +1235,7 @@ function fbRender(){const root=document.getElementById('fbroot');if(!root)return
   else if(fb.mode==='list')root.innerHTML=`<div class="fbpanel"><div class="panel" role="dialog" aria-modal="true" aria-label="Feedback"><button class="close" data-fbclose>close ✕</button><h2 style="margin:0 0 .3rem;font-size:16px">Feedback captured in this browser <span class="muted mono" style="font-size:12px">(${fb.list.length})</span></h2><p class="muted" style="margin:0 0 .5rem;font-size:12px">Copy the JSON and send it to Stack until a shared store exists.</p>
       <div class="row" style="margin:0 0 .5rem"><button class="btn" data-fbcopy>Copy all as JSON</button><button class="btn" data-fbclear>Clear all</button></div>
       ${fb.list.length?fb.list.map((f,i)=>`<div class="fbitem">${f.shot?`<img src="${f.shot}" alt="">`:'<div class="empty">no image</div>'}<div><div class="m">${esc(f.at)} · ${esc(f.page)}${f.who?' · '+esc(f.who):''}${f.remote==='saved'?' · in team store':f.remote==='error'?' · team store save failed':''}</div><div><b>Bug:</b> ${esc(f.bug)}</div><div><b>Change:</b> ${esc(f.change)}</div><button class="btn sm" data-fbdel="${i}" style="margin-top:.3rem">Delete</button></div></div>`).join(''):'<div class="empty">Nothing captured yet. Use the + in the top bar.</div>'}</div></div>`;
-  else root.innerHTML=fb.toast?`<div class="fbtoast ${fb.toast.cls||''}"><span>${esc(fb.toast.msg)}</span><button class="btn sm" data-toastx>Dismiss</button></div>`:'';
+  else root.innerHTML=fb.toast?`<div class="fbtoast ${fb.toast.cls||''}${fb.toast.leaving?' leaving':''}"><span>${esc(fb.toast.msg)}</span><button class="btn sm" data-toastx>Dismiss</button></div>`:'';
 }
 function fbStart(){fb.mode='select';fb.rect=null;fb.shot=null;fbRender();const b=document.querySelector('[data-fbviewport]');if(b)b.focus()}
 async function fbCapture(r){
@@ -1197,26 +1252,60 @@ document.addEventListener('mousedown',e=>{if(e.target.id!=='fbov')return;fb.sx=e
 document.addEventListener('mousemove',e=>{if(!fb.rect||!fb.rect.dragging)return;const r=document.getElementById('fbrect');if(!r)return;const x=Math.min(e.clientX,fb.sx),y=Math.min(e.clientY,fb.sy),w=Math.abs(e.clientX-fb.sx),h=Math.abs(e.clientY-fb.sy);r.style.left=x+'px';r.style.top=y+'px';r.style.width=w+'px';r.style.height=h+'px'});
 document.addEventListener('mouseup',e=>{if(!fb.rect||!fb.rect.dragging)return;const x=Math.min(e.clientX,fb.sx),y=Math.min(e.clientY,fb.sy),w=Math.abs(e.clientX-fb.sx),h=Math.abs(e.clientY-fb.sy);fb.rect=null;if(w<12||h<12){fb.mode=null;fbRender();return}fbCapture({x:Math.round(x+window.scrollX),y:Math.round(y+window.scrollY),w:Math.round(w),h:Math.round(h)})});
 function announce(msg){const l=document.getElementById('live');if(l){l.textContent='';setTimeout(()=>{l.textContent=msg},30)}}
-function setTheme(v){try{if(v==='system')localStorage.removeItem('aegis4-theme');else localStorage.setItem('aegis4-theme',v)}catch(e){}if(v==='system')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',v);renderUmenu();announce('Theme set to '+v);scheduleSettingsSync()}
+let themeTimer=null;
+function setTheme(v){try{if(v==='system')localStorage.removeItem('aegis4-theme');else localStorage.setItem('aegis4-theme',v)}catch(e){}
+  const de=document.documentElement;if(de&&de.classList&&!reducedMotion()){clearTimeout(themeTimer);de.classList.add('theming');themeTimer=setTimeout(()=>de.classList.remove('theming'),300)} /* v1.6.0: cross-fade the surfaces; a second click restarts the window */
+  if(v==='system')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',v);renderUmenu();announce('Theme set to '+v);scheduleSettingsSync()}
 function curTheme(){try{return localStorage.getItem('aegis4-theme')||'system'}catch(e){return 'system'}}
 function searchItems(q){q=q.trim().toLowerCase();if(q.length<2)return [];return Object.values(IDX.life).filter(L=>L.title.toLowerCase().includes(q)||L.identifiers.some(x=>x.toLowerCase().includes(q))).sort((p,q2)=>q2.last_seen.localeCompare(p.last_seen)||q2.maxScore-p.maxScore).slice(0,8)}
 function renderSearch(){const q=document.getElementById('q');const box=document.getElementById('sres');if(!BOOTED){if(box)box.hidden=true;return}if(!q||!document.activeElement||document.activeElement!==q||q.value.trim().length<2){box.hidden=true;return}
   const r=searchItems(q.value);box.hidden=false;box.innerHTML=r.length?r.map(L=>`<div class="r" data-open="${esc(L.id)}"><span class="t">${esc(L.title)}</span><span class="m">${L.identifiers[0]?esc(L.identifiers[0])+' · ':''}${L.last_seen===TODAY_S?'today':esc(L.last_seen)}${L.maxTier===1?' · T1':''}</span></div>`).join(''):'<div class="none">No items match.</div>'}
+/* v1.6.0 motion helpers. markViewEnter: the view fades in when the route changes (page, area, date or report), not
+   on every re-render, so toggling a star or a filter never flashes the page. flipRender: Wrike-style glide; on
+   re-renders that reorder or resize cards, each [data-flip] element animates from its old position to its new one
+   (FLIP) and cards that were not there before fade in. Plain render() when the user prefers reduced motion, the
+   DOM cannot measure (the test harness), or there are too many cards to be worth it. */
+let lastViewKey=null;
+function markViewEnter(main){const key=[state.page,state.area||'',state.date||'',state.report||''].join('|');if(key===lastViewKey||!main||!main.classList)return;lastViewKey=key;main.classList.remove('enter');void main.offsetWidth;main.classList.add('enter')}
+function reducedMotion(){try{return typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}}
+const FLIP_MAX=80,FLIP_MS=220;
+function flipRender(){
+  let els=[];try{els=Array.from(document.querySelectorAll('[data-flip]'))}catch(e){}
+  const can=els.length>0&&els.length<=FLIP_MAX&&!reducedMotion()&&typeof els[0].getBoundingClientRect==='function'&&typeof els[0].animate==='function';
+  if(!can){render();return}
+  const before=new Map(),sy0=window.scrollY||0;els.forEach(el=>before.set(el.dataset.flip,el.getBoundingClientRect()));
+  render();
+  const sy1=window.scrollY||0,vh=window.innerHeight||0;let after=[];try{after=Array.from(document.querySelectorAll('[data-flip]'))}catch(e){}
+  after.forEach(el=>{const b=before.get(el.dataset.flip);
+    /* a card inside a section or body that is itself entering is carried by that animation; a card that was hidden
+       (display:none gives a zero rect) or absent before is new */
+    const carried=!!(el.parentElement&&el.parentElement.closest&&el.parentElement.closest('.secbody.enter,.xb.enter'));
+    if(!b||(b.width===0&&b.height===0)){if(!carried&&el.classList)el.classList.add('enter');return}
+    if(carried)return;
+    const a=el.getBoundingClientRect();if(a.bottom<0||a.top>vh)return;
+    const dx=b.left-a.left,dy=(b.top+sy0)-(a.top+sy1);if(Math.abs(dx)<1&&Math.abs(dy)<1)return;
+    el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'none'}],{duration:FLIP_MS,easing:'cubic-bezier(.2,.7,.2,1)'})});
+}
 function render(){
-  if(!BOOTED)return; /* the loader (boot) owns #main until data is in */
-  if(needAuth()&&SESSION&&!PW_SET){showSetPassword(true);return}
+  if(!BOOTED){state.anim=null;return} /* the loader (boot) owns #main until data is in */
+  if(needAuth()&&SESSION&&!PW_SET){state.anim=null;showSetPassword(true);return}
   try{renderInner();fitTwo()}catch(e){
     if(typeof console!=='undefined')console.error('AEGIS render failed',e);
     const main=document.getElementById('main');if(main)main.innerHTML=`<div class="banner-err" role="alert">This view failed to render (${esc(e&&e.message||e)}). <a href="#home">Back to Your work</a></div>`;
     document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
   }
+  state.anim=null; /* one-shot: the enter mark belonged to this render only */
 }
+/* MAIN_STALE: #main still holds the loader skeleton (showLoading) and must be painted before an overlay opens over it,
+   for example when the page boots on an #item- link. lastItemKey: the popout plays its entrance only for a new item. */
+let MAIN_STALE=false,lastItemKey=null;
+function paintMain(){const main=document.getElementById('main');main.innerHTML=state.page==='home'?renderHome():state.page==='area'?renderArea():state.page==='brief'?renderBrief():state.page==='trends'?renderTrends():renderArchive();markViewEnter(main);MAIN_STALE=false}
 function renderInner(){
   const h=parseHash();
-  if(h.item){/* overlay over current page */ lastOpener=h.item;markViewed(h.item);document.getElementById('ov').innerHTML=renderDetail(h.item);document.body.classList.add('locked');const c=document.querySelector('#ov .close');if(c)c.focus()}
-  else{Object.assign(state,{page:h.page});if(h.date)state.date=BRIEFS[h.date]?h.date:TODAY_S;if(h.area!==undefined)state.area=h.area;if(h.report!==undefined){if(state.report!==h.report)state.sel=null;state.report=h.report}
+  if(h.item){/* overlay over current page */ lastOpener=h.item;markViewed(h.item);if(MAIN_STALE)paintMain();const fresh=h.item!==lastItemKey;lastItemKey=h.item;document.getElementById('ov').innerHTML=renderDetail(h.item,fresh);document.body.classList.add('locked');const c=document.querySelector('#ov .close');if(c)c.focus()}
+  else{lastItemKey=null;Object.assign(state,{page:h.page});if(h.date)state.date=BRIEFS[h.date]?h.date:TODAY_S;if(h.area!==undefined)state.area=h.area;if(h.report!==undefined){if(state.report!==h.report)state.sel=null;state.report=h.report}
     document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
-    const main=document.getElementById('main');main.innerHTML=state.page==='home'?renderHome():state.page==='area'?renderArea():state.page==='brief'?renderBrief():state.page==='trends'?renderTrends():renderArchive();}
+    paintMain()}
   renderSide();renderRibbon();renderUmenu();
   document.title=(h.item?'Item · ':'')+({home:'Your work',area:(AREAS[state.area]||{}).name||'Area',brief:'Daily brief '+state.date,trends:state.report?(REPORTS.find(r=>r.id===state.report)||{}).t||'Trends':'Trends',archive:'Archive'}[state.page]||'')+' · AEGIS Daily Brief';
 }
@@ -1237,7 +1326,14 @@ function fitTwo(){
 let fitTimer=null;
 if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('resize',()=>{clearTimeout(fitTimer);fitTimer=setTimeout(fitTwo,120)});
 let lastOpener=null;
-function closeOv(){location.hash=pageHash();setTimeout(()=>{const el=lastOpener&&document.querySelector(`[data-open="${lastOpener}"],[data-expand="${lastOpener}"]`);if(el)el.focus()},0)}
+let ovClosing=false;
+function closeOv(){ /* v1.6.0: fade the overlay out first; straight away when there is nothing to animate or motion is reduced */
+  const go=()=>{ovClosing=false;location.hash=pageHash();setTimeout(()=>{const el=lastOpener&&document.querySelector(`[data-open="${lastOpener}"],[data-expand="${lastOpener}"]`);if(el)el.focus()},0)};
+  let ov=null;try{ov=document.querySelector('#ov .ov')}catch(e){}
+  if(!ov||!ov.classList||ovClosing||reducedMotion()){go();return}
+  ovClosing=true;ov.classList.add('leaving');const h0=location.hash;
+  setTimeout(()=>{if(location.hash!==h0){ovClosing=false;return} /* something else navigated meanwhile; leave it be */ go()},130);
+}
 document.addEventListener('click',e=>{
   const t=e.target;
   /* v1.3 loader, auth and feedback-status controls (work before the first render too) */
@@ -1252,7 +1348,9 @@ document.addEventListener('click',e=>{
   if(t.closest('#signOutBtn')){signOut();return}
   if(t.closest('#menuSignInBtn')){state.umenu=false;renderUmenu();showSignIn();return}
   if(t.closest('[data-toastx]')){fb.toast=null;fbRender();return}
-  const grp=t.closest('[data-grp]');if(grp){const k=grp.dataset.grp;const open=grp.getAttribute('aria-expanded')==='true';if(open){state.side.delete(k);state.side.add('!'+k)}else{state.side.add(k);state.side.delete('!'+k)}renderSide();return}
+  const grp=t.closest('[data-grp]');if(grp){const k=grp.dataset.grp;const open=grp.getAttribute('aria-expanded')==='true';if(open){state.side.delete(k);state.side.add('!'+k)}else{state.side.add(k);state.side.delete('!'+k)}
+    /* v1.6.0: toggle the existing group in place so the accordion can animate; the next full render agrees with state.side */
+    const g=grp.closest('.grp');if(g&&g.classList){g.classList.toggle('open',!open);grp.setAttribute('aria-expanded',String(!open));const ch=grp.querySelector&&grp.querySelector('.chev');if(ch)ch.textContent=open?'▾':'▴'}else renderSide();return}
   if(t.id==='menubtn'){state.sideOpen=!state.sideOpen;t.setAttribute('aria-expanded',String(state.sideOpen));renderSide();return}
   if((t.closest('#sideTgl')||(t.closest('#side')&&!t.closest('a,button')))&&window.innerWidth>900){state.sideCollapsed=!state.sideCollapsed;store.set('sidecol',state.sideCollapsed);renderSide();announce(state.sideCollapsed?'Sidebar collapsed':'Sidebar expanded');return}
   if(t.id==='avatarBtn'){state.umenu=!state.umenu;renderUmenu();return}
@@ -1273,31 +1371,33 @@ document.addEventListener('click',e=>{
   if(t.closest('#side')&&t.closest('a')&&window.innerWidth<=900){state.sideOpen=false}
   if(t.id==='resetBtn'){myAreas=new Set();stars=new Set();viewed=[];store.set('my',[]);store.set('stars',[]);store.set('viewed',[]);render();return}
   if(t.closest('[data-pick]')){state.pick=!state.pick;render();return}
-  const cb=t.closest('[data-collbtn]');if(cb){const k=cb.dataset.collbtn;state.coll.has(k)?state.coll.delete(k):state.coll.add(k);store.set('coll',[...state.coll]);render();announce(state.coll.has(k)?'Section collapsed':'Section expanded');return}
-  const ch=t.closest('.collh');if(ch&&!t.closest('button,select,a,input')){const k=ch.dataset.coll;state.coll.has(k)?state.coll.delete(k):state.coll.add(k);store.set('coll',[...state.coll]);render();return}
-  const tb=t.closest('[data-tab]');if(tb){state.tab=tb.dataset.tab;if(state.coll.has('tabs')){state.coll.delete('tabs');store.set('coll',[...state.coll])}render();return}
-  const my=t.closest('[data-my]');if(my){const k=my.dataset.my;myAreas.has(k)?myAreas.delete(k):myAreas.add(k);store.set('my',[...myAreas]);render();return}
-  const st=t.closest('[data-star]');if(st){const k=st.dataset.star;stars.has(k)?stars.delete(k):stars.add(k);store.set('stars',[...stars]);render();return}
+  /* v1.6.0: handlers that reorder, add or resize cards render through flipRender so cards glide; a section or tab
+     that opens, and an item that expands, carry a one-shot state.anim mark for their enter animation. */
+  const cb=t.closest('[data-collbtn]');if(cb){const k=cb.dataset.collbtn;state.coll.has(k)?state.coll.delete(k):state.coll.add(k);store.set('coll',[...state.coll]);if(!state.coll.has(k))state.anim={kind:'coll',key:k};flipRender();announce(state.coll.has(k)?'Section collapsed':'Section expanded');return}
+  const ch=t.closest('.collh');if(ch&&!t.closest('button,select,a,input')){const k=ch.dataset.coll;state.coll.has(k)?state.coll.delete(k):state.coll.add(k);store.set('coll',[...state.coll]);if(!state.coll.has(k))state.anim={kind:'coll',key:k};flipRender();return}
+  const tb=t.closest('[data-tab]');if(tb){if(state.tab!==tb.dataset.tab)state.anim={kind:'tab',key:'tabs'};state.tab=tb.dataset.tab;if(state.coll.has('tabs')){state.coll.delete('tabs');store.set('coll',[...state.coll])}flipRender();return}
+  const my=t.closest('[data-my]');if(my){const k=my.dataset.my;myAreas.has(k)?myAreas.delete(k):myAreas.add(k);store.set('my',[...myAreas]);flipRender();return}
+  const st=t.closest('[data-star]');if(st){const k=st.dataset.star;stars.has(k)?stars.delete(k):stars.add(k);store.set('stars',[...stars]);flipRender();return}
   if(t.closest('[data-streamall]')){state.streamAll=true;render();return}
-  const cl=t.closest('[data-clear]');if(cl){const k=cl.dataset.clear;if(k==='all'){state.f.area=null;state.f.tier=null;state.f.status=null;state.f.source=null}else state.f[k]=null;render();return}
+  const cl=t.closest('[data-clear]');if(cl){const k=cl.dataset.clear;if(k==='all'){state.f.area=null;state.f.tier=null;state.f.status=null;state.f.source=null}else state.f[k]=null;flipRender();return}
   if(t.closest('[data-cum]')){state.cum=!state.cum;render();return}
-  if(t.closest('[data-clearsel]')){state.sel=null;render();return}
-  if(t.closest('[data-exp]')){brief().items.forEach(i=>state.level.set(i.item_id,3));render();return}
-  if(t.closest('[data-col]')){brief().items.forEach(i=>state.level.set(i.item_id,0));render();return}
-  const cc=t.closest('[data-collapse]');if(cc){e.stopPropagation();state.level.set(cc.dataset.collapse,0);render();return}
+  if(t.closest('[data-clearsel]')){state.sel=null;flipRender();return}
+  if(t.closest('[data-exp]')){brief().items.forEach(i=>state.level.set(i.item_id,3));flipRender();return}
+  if(t.closest('[data-col]')){brief().items.forEach(i=>state.level.set(i.item_id,0));flipRender();return}
+  const cc=t.closest('[data-collapse]');if(cc){e.stopPropagation();state.level.set(cc.dataset.collapse,0);flipRender();return}
   const cx=t.closest('[data-ctx]');if(cx){const k=cx.dataset.ctx;state.ctx.has(k)?state.ctx.delete(k):state.ctx.add(k);render();return}
   const cp=t.closest('[data-copy]');if(cp){const v=cp.dataset.copy;navigator.clipboard?.writeText(v).then(()=>{cp.textContent='copied';setTimeout(()=>cp.textContent='copy',900)}).catch(()=>{cp.textContent='select'});return}
   if(t.closest('[data-close]')||t.id==='ovbg'){closeOv();return}
   const nv=t.closest('[data-nav]');if(nv&&!t.closest('a')){location.hash=nv.dataset.nav;return}
   const orow=t.closest('[data-openrow]');if(orow){location.hash='#item-'+orow.dataset.openrow;return}
   /* chart marks: set selection; double-click on area bars opens the area */
-  const mk=t.closest('.chart .clk');if(mk){const key=mk.dataset.day||mk.dataset.key;state.sel=state.sel===key?null:key;render();return}
+  const mk=t.closest('.chart .clk');if(mk){const key=mk.dataset.day||mk.dataset.key;state.sel=state.sel===key?null:key;flipRender();return}
   if(t.closest('a')||t.closest('button')||t.closest('select'))return;
-  const ex=t.closest('[data-expand]');if(ex){state.level.set(ex.dataset.expand,3);render();return}
+  const ex=t.closest('[data-expand]');if(ex){state.level.set(ex.dataset.expand,3);state.anim={kind:'expand',key:ex.dataset.expand};flipRender();return}
   const op=t.closest('[data-open]');if(op){location.hash='#item-'+op.dataset.open;return}
 });
 document.addEventListener('dblclick',e=>{const mk=e.target.closest('.chart .clk');if(mk&&mk.dataset.key&&AREAS[mk.dataset.key]){location.hash='#area-'+mk.dataset.key}});
-document.addEventListener('change',e=>{const s=e.target.closest('[data-f]');if(s){const k=s.dataset.f;const v=s.value;state.f[k]=v===''?null:(k==='tier'||k==='period'?Number(v):v);if(k==='period'||k==='area')state.sel=null;render()}});
+document.addEventListener('change',e=>{const s=e.target.closest('[data-f]');if(s){const k=s.dataset.f;const v=s.value;state.f[k]=v===''?null:(k==='tier'||k==='period'?Number(v):v);if(k==='period'||k==='area')state.sel=null;flipRender()}});
 document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.matches&&(e.target.matches('.chart .clk')||e.target.matches('[data-ctx]')||e.target.matches('.rcardi'))){e.preventDefault();e.target.click();return}
   if(e.key==='Escape'){document.querySelectorAll('.tl2').forEach(t=>t.classList.add('notips'))}
@@ -1338,7 +1438,19 @@ function apiBase(){return String((CFG&&CFG.apiBase)||'').replace(/\/+$/,'')}
 function userId(){return SESSION&&SESSION.user&&SESSION.user.id||null}
 function userEmail(){return SESSION&&SESSION.user&&SESSION.user.email||null}
 function renderAvatar(){const a=document.getElementById('avatarBtn');if(!a)return;const em=userEmail();a.textContent=em?em.charAt(0).toUpperCase():'A';a.setAttribute('aria-label',em?'Account menu, signed in as '+em:'Account menu');a.title=em||'Account'}
-function showLoading(msg){const m=document.getElementById('main');if(m)m.innerHTML=`<div class="empty" role="status">${esc(msg||'Loading the brief archive…')}</div>`}
+/* v1.6.0: a submit button that is waiting on the network shows a ring spinner in place of its label (Wrike reference)
+   and is disabled and aria-busy until the call settles. */
+function setBusy(btn,on){if(!btn)return;btn.disabled=!!on;if(btn.classList)btn.classList.toggle('busy',!!on);if(on)btn.setAttribute('aria-busy','true');else btn.removeAttribute('aria-busy')}
+/* v1.6.0: while the archive loads, #main shows a skeleton shaped like Home (counts strip, area cards, tab row, stream)
+   with a spinner and the status line. The bars are decorative and hidden from assistive tech; the real view fades
+   in over them (lastViewKey is reset so the first render after the load animates). */
+function showLoading(msg){const m=document.getElementById('main');if(!m)return;lastViewKey=null;MAIN_STALE=true;const text=esc(msg||'Loading the brief archive…');
+  const rep=(n,f)=>Array.from({length:n},(_,i)=>f(i)).join('');
+  m.innerHTML=`<div class="skel" role="status"><div class="ph"><div class="ld"><span class="spin"></span><span>${text}</span></div></div>
+    <div aria-hidden="true"><div class="counts">${rep(8,()=>`<div class="tile"><span class="b" style="width:55%"></span><span class="b" style="width:38%;height:20px"></span></div>`)}</div>
+    <div class="areas">${rep(6,()=>`<div class="acard"><div class="rail-c"></div><div class="in"><span class="b" style="width:52%;height:13px"></span><span class="b" style="width:84%"></span><span class="b" style="width:68%"></span><span class="b" style="width:74%"></span></div></div>`)}</div>
+    <div class="tabs">${rep(5,i=>`<span class="b" style="width:${[64,72,80,96,52][i]}px;height:12px"></span>`)}</div>
+    <div class="stream">${rep(4,i=>`<div class="ev"><span class="b" style="width:12px;height:12px"></span><div><span class="b" style="width:${[58,70,46,64][i]}%"></span><span class="b" style="width:26%;height:8px"></span></div></div>`)}</div></div></div>`}
 function showBootError(title,err){
   const m=document.getElementById('main');if(!m)return;const detail=err?String(err&&err.message||err):'';
   m.innerHTML=`<div class="banner-err" role="alert" style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;justify-content:space-between"><span><b>${esc(title)}</b>${detail?` ${esc(detail)}`:''}</span><button class="btn sm" data-retry>Retry</button></div>`;
@@ -1437,14 +1549,14 @@ async function signInWithPassword(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter a valid email address.','err');return}
   if(!password){if(pw){pw.setAttribute('aria-invalid','true');pw.focus()}say('Enter your password, or request a one-time code below.','err');return}
   if(!SB){say('Sign-in is not configured for this page.','err');return}
-  if(btn)btn.disabled=true;say('Signing in…');
+  setBusy(btn,true);say('Signing in…');
   try{
     const {error}=await SB.auth.signInWithPassword({email,password});
     if(error)throw error;AUTH_ERR='';say('Signed in. Loading…','ok');   /* onAuthChange boots the page */
   }catch(e){const msg=String(e&&e.message||e);
     say(/invalid login credentials/i.test(msg)?'Email or password did not match. If you have not set a password yet, request a one-time code below.':/email not confirmed/i.test(msg)?'This account has not been verified yet. Request a one-time code below to verify it.':/rate limit|too many/i.test(msg)?'Too many attempts; wait a minute and try again.':'Could not sign in: '+msg,'err');
     if(pw){pw.value='';pw.focus()}
-    if(btn)btn.disabled=false}
+    setBusy(btn,false)}
 }
 /* Set or change password. force=true blocks the app until a password is saved (first sign-in via code, or an
    admin-created account whose placeholder password must never be used). */
@@ -1467,7 +1579,7 @@ async function savePassword(){
   if(p1.length<12){if(a){a.setAttribute('aria-invalid','true');a.focus()}say('Use at least 12 characters.','err');return}
   if(p1!==p2){if(b){b.setAttribute('aria-invalid','true');b.focus()}say('The two entries do not match.','err');return}
   if(!SB||!userId()){showSignIn();return}
-  if(btn)btn.disabled=true;say('Saving…');
+  setBusy(btn,true);say('Saving…');
   try{
     const {error}=await SB.auth.updateUser({password:p1});
     if(error)throw error;
@@ -1478,7 +1590,7 @@ async function savePassword(){
     if(BOOTED){renderSide();render()}else boot();
   }catch(e){const msg=String(e&&e.message||e);
     say(/weak|pwned|leaked|compromised|easy to guess/i.test(msg)?'That password has appeared in a known breach or is too easy to guess; choose another.':/same password/i.test(msg)?'That is already your password; choose a new one.':'Could not save the password: '+msg,'err');
-    if(btn)btn.disabled=false}
+    setBusy(btn,false)}
 }
 /* Step 2 of sign-in: the code field. Codes rather than links because mail-security scanners (Defender Safe Links on
    the syr.edu tenant) fetch every URL in an email before delivery, which redeems a one-time link before the reader
@@ -1498,14 +1610,14 @@ async function sendMagicLink(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter a valid email address.','err');return}
   if(inp)inp.removeAttribute('aria-invalid');
   if(!SB){say('Sign-in is not configured for this page.','err');return}
-  if(btn)btn.disabled=true;say('Sending the code…');
+  setBusy(btn,true);say('Sending the code…');
   try{
     const {error}=await SB.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:truthy(CFG&&CFG.allowSignup)}});
     if(error)throw error;AUTH_ERR='';
     showCodeStep(email);announce(`Code sent to ${email}. Enter the code from the email.`);
   }catch(e){const msg=String(e&&e.message||e);
     say(/signups? not allowed|user not found|not allowed for otp/i.test(msg)?'That email is not on the access list. Ask an AEGIS admin to invite you.':/rate limit|too many|security purposes/i.test(msg)?'Too many requests for this address; wait a minute and try again.':'Could not send the code: '+msg,'err');
-    if(btn)btn.disabled=false}
+    setBusy(btn,false)}
 }
 async function verifyCode(){
   const inp=document.getElementById('signinCode'),st=document.getElementById('signinStatus'),btn=document.getElementById('codeSubmit');
@@ -1514,14 +1626,14 @@ async function verifyCode(){
   if(code.length<6||code.length>10){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter the numeric code from the email (6 to 10 digits).','err');return}
   if(inp)inp.removeAttribute('aria-invalid');
   if(!SB||!lastEmail){showSignIn('code');return}
-  if(btn)btn.disabled=true;say('Checking the code…');
+  setBusy(btn,true);say('Checking the code…');
   try{
     const {error}=await SB.auth.verifyOtp({email:lastEmail,token:code,type:'email'});
     if(error)throw error;AUTH_ERR='';say('Signed in. Loading…','ok');   /* onAuthChange boots the page */
   }catch(e){const msg=String(e&&e.message||e);
     say(/expired|invalid/i.test(msg)?'That code is not valid any more. Send a new code and use the latest email.':'Could not verify the code: '+msg,'err');
     if(inp){inp.setAttribute('aria-invalid','true');if(inp.select)inp.select();inp.focus()}
-    if(btn)btn.disabled=false}
+    setBusy(btn,false)}
 }
 async function signOut(){
   state.umenu=false;renderUmenu();
@@ -1563,7 +1675,10 @@ function pushSettings(){
 }
 
 /* ---- feedback: team store (table feedback + bucket feedback-screenshots) on top of the local list ---- */
-function setToast(msg,cls){fb.toast={msg,cls};if(!fb.mode)fbRender();announce(msg);if(cls==='ok'){const ref=fb.toast;setTimeout(()=>{if(fb.toast===ref){fb.toast=null;if(!fb.mode)fbRender()}},6000)}}
+/* v1.6.0: a success toast fades out (leaving phase, 200 ms) before it is removed. Each toast carries a token so the
+   two timers only act on the toast they were set for; the leaving state is a new object, not a mutation. */
+let toastSeq=0;
+function setToast(msg,cls){const token=++toastSeq;fb.toast={msg,cls,token};if(!fb.mode)fbRender();announce(msg);if(cls==='ok'){setTimeout(()=>{if(!fb.toast||fb.toast.token!==token)return;fb.toast={...fb.toast,leaving:true};if(!fb.mode)fbRender();setTimeout(()=>{if(fb.toast&&fb.toast.token===token){fb.toast=null;if(!fb.mode)fbRender()}},200)},6000)}}
 function dataUrlToBlob(u){const i=u.indexOf(',');const bin=atob(u.slice(i+1));const a=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)a[k]=bin.charCodeAt(k);return new Blob([a],{type:'image/jpeg'})}
 async function fbRemote(entry){
   const uid=userId();if(!SB||!uid)return;

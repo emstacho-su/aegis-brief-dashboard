@@ -12,7 +12,7 @@ At startup the page reads `window.AEGIS_CONFIG` and loads its data before the fi
 | `static` | `mode: 'static'`, or a config with `supabaseUrl` and no `apiBase` | Supabase tables `briefs` (`select date,data`, ordered by date) and `archive_index` (`id = 1`, column `data`), read with the signed-in user's session. No container API. |
 | `sample` | no config at all | `ARCHIVE_JSON` if a script defines it before the page script (shown as `local`, or `sample` when `ARCHIVE_META.sample` is set), otherwise the embedded synthetic generator. This keeps the file reviewable straight from disk. |
 
-While loading, `#main` shows a status line; if the load fails (HTTP error, network, empty archive, Supabase error) it shows an error banner with a Retry button instead of a blank page.
+While loading, `#main` shows a skeleton of the Home layout with a spinner and the status line (v1.6.0); if the load fails (HTTP error, network, empty archive, Supabase error) it shows an error banner with a Retry button instead of a blank page.
 
 ## Config
 
