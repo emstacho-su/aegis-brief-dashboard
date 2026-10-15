@@ -4,7 +4,7 @@ One self-contained page, `dashboard.html` (no build step, no framework). It rend
 
 ## Three modes
 
-At startup the page reads `window.AEGIS_CONFIG` and loads its data before the first render. The ribbon in the header shows `v1.3.1 · <n> briefs · <mode>`.
+At startup the page reads `window.AEGIS_CONFIG` and loads its data before the first render. The ribbon in the header shows `v1.3.2 · <n> briefs · <mode>`.
 
 | Mode | When | Data comes from |
 |---|---|---|
@@ -48,7 +48,7 @@ Two ways to supply it, and the inline one wins:
 
 Only when `supabaseUrl` and `supabaseAnonKey` are set, the page loads `@supabase/supabase-js@2.45.4` (UMD, jsDelivr, with a Subresource Integrity hash).
 
-- `requireAuth: true`: with no session the page shows a sign-in card, sends `auth.signInWithOtp({email, options: {emailRedirectTo: origin + pathname, shouldCreateUser: allowSignup}})`, and loads data only once a session exists. The link returns tokens in the URL hash; supabase-js consumes them and the page resets the route to `#home`. An expired or invalid link shows its error on the sign-in card. Opening the link in another tab of the same browser also signs in the waiting tab.
+- `requireAuth: true`: with no session the page shows a sign-in card, sends `auth.signInWithOtp({email, options: {emailRedirectTo: origin + pathname, shouldCreateUser: allowSignup}})`, then shows a code field and calls `auth.verifyOtp({email, token, type: 'email'})` with the 6-digit code from the email (the Magic Link template must carry `{{ .Token }}` and no link; see `supabase/README.md`), and loads data only once a session exists. The link returns tokens in the URL hash; supabase-js consumes them and the page resets the route to `#home`. An expired or invalid link shows its error on the sign-in card. Opening the link in another tab of the same browser also signs in the waiting tab.
 - `requireAuth: false`: anonymous viewers see the dashboard as before; the account menu offers "Sign in" so they can sync their settings.
 - Signed in: the avatar shows the first letter of the email, the account menu shows the email and a working Sign out (local scope).
 
@@ -79,7 +79,7 @@ aegis-worker ingest-dir data/briefs
 aegis-worker serve            # http://localhost:8080
 ```
 
-Open http://localhost:8080. The ribbon should read `v1.3.1 · 22 briefs · container`, and Archive rows should have "Open stored page" links. To test sign-in, start the worker with `SUPABASE_URL` and `SUPABASE_ANON_KEY` set and add `http://localhost:8080/` to the Supabase redirect URLs.
+Open http://localhost:8080. The ribbon should read `v1.3.2 · 22 briefs · container`, and Archive rows should have "Open stored page" links. To test sign-in, start the worker with `SUPABASE_URL` and `SUPABASE_ANON_KEY` set and add `http://localhost:8080/` to the Supabase redirect URLs.
 
 Static mode: copy `config.example.js` to `config.js`, fill in the project URL and anon key, and serve the folder over HTTP (`python3 -m http.server 8000` in `apps/web/`, then open `http://localhost:8000/dashboard.html`). Magic links do not work from `file://`.
 

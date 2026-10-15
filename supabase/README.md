@@ -45,3 +45,16 @@ python3 supabase/seed.py --help
 ```
 
 Both read keys from the environment only. Neither prints them.
+
+## Auth email template (required)
+
+The dashboard signs people in with a 6-digit code, not a link. Mail-security scanners (Defender Safe Links on
+Microsoft 365 tenants such as syr.edu) fetch every URL in an email before delivery; fetching a Supabase magic link
+redeems it, so the reader finds a dead link. A code is inert until typed. The link and the code are the same
+underlying one-time token, so the email must contain only the code.
+
+In the dashboard: Authentication, Email Templates, Magic Link. Subject `Your AEGIS sign-in code`, body from
+`supabase/templates/magic-link.html`. Leave the other templates alone; the app only uses this one.
+
+Also set custom SMTP (Authentication, SMTP Settings) before inviting anyone: the built-in mailer allows two emails
+per hour per project. Once SMTP is on, raise the email rate limit under Authentication, Rate Limits.

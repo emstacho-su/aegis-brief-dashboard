@@ -494,7 +494,7 @@ footer .accent{color:var(--accent)}
   <div style="display:flex;align-items:center;gap:.5rem;min-width:0"><button class="menubtn" id="menubtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side">☰</button><div class="brand">SU InfoSec<span class="pipe">|</span>AEGIS Daily Brief</div></div>
   <div class="hdr-right">
     <div class="search"><input id="q" type="search" placeholder="Search items, CVEs" autocomplete="off" aria-label="Search items"><div class="sres" id="sres" hidden></div></div>
-    <span class="ribbon" id="ribbon">v1.3.1</span>
+    <span class="ribbon" id="ribbon">v1.3.2</span>
     <button class="plus" id="fbBtn" title="Report a bug or request a change" aria-label="Report a bug or request a change"><span aria-hidden="true">+</span></button>
     <button class="avatar" id="avatarBtn" aria-expanded="false" aria-haspopup="menu" aria-label="Account menu" title="Account">A</button>
     <div class="umenu" id="umenu" hidden role="menu"></div>
@@ -1111,7 +1111,7 @@ rank 2  chunk c_1a07  doc d_feeds/${esc(it.source.name.toLowerCase().replace(/\s
 /* =========================================================================
    7. Notes, mount, events
    ========================================================================= */
-function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.3.1 · ${DATES.length} briefs · ${MODE}`:'v1.3.1'}
+function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.3.2 · ${DATES.length} briefs · ${MODE}`:'v1.3.2'}
 state.coll=new Set(store.get('coll',[]));state.side=new Set();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
 const I={
  home:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -1230,6 +1230,8 @@ document.addEventListener('click',e=>{
   /* v1.3 loader, auth and feedback-status controls (work before the first render too) */
   if(t.closest('[data-retry]')){boot();return}
   if(t.closest('[data-signin-cancel]')){SIGNIN=false;render();return}
+  if(t.closest('[data-signin-back]')){AUTH_ERR='';showSignIn();return}
+  if(t.closest('[data-signin-resend]')){showSignIn();sendMagicLink();return}
   if(t.closest('#signOutBtn')){signOut();return}
   if(t.closest('#menuSignInBtn')){state.umenu=false;renderUmenu();showSignIn();return}
   if(t.closest('[data-toastx]')){fb.toast=null;fbRender();return}
@@ -1301,7 +1303,7 @@ document.addEventListener('focusout',e=>{const mk=e.target.closest&&e.target.clo
 document.addEventListener('input',e=>{if(e.target.id==='q')renderSearch()});
 document.addEventListener('focusin',e=>{if(e.target.id==='q')renderSearch()});
 window.addEventListener('hashchange',()=>{state.umenu=false;render()});
-document.addEventListener('submit',e=>{if(e.target&&e.target.id==='signinForm'){e.preventDefault();sendMagicLink()}});
+document.addEventListener('submit',e=>{if(!e.target)return;if(e.target.id==='signinForm'){e.preventDefault();sendMagicLink()}else if(e.target.id==='codeForm'){e.preventDefault();verifyCode()}});
 
 /* =========================================================================
    8. Loader (data adapter), Supabase magic-link auth, settings sync, team feedback store
@@ -1399,14 +1401,25 @@ function cleanAuthHash(h){
 function showSignIn(){
   SIGNIN=true;const m=document.getElementById('main');if(!m)return;
   document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
-  const cancel=BOOTED&&!needAuth();const errMsg=AUTH_ERR?`The last sign-in link did not work (${AUTH_ERR}). Request a new one.`:'';
-  m.innerHTML=`<div class="panel signin"><h1>Sign in to the AEGIS Daily Brief</h1><p class="lead">Enter your work email. We will send a one-time sign-in link; open it in this browser to continue.</p>
+  const cancel=BOOTED&&!needAuth();const errMsg=AUTH_ERR?`The last sign-in attempt did not work (${AUTH_ERR}). Request a new code.`:'';
+  m.innerHTML=`<div class="panel signin"><h1>Sign in to the AEGIS Daily Brief</h1><p class="lead">Enter your work email. We will email you a 6-digit code to type in here.</p>
     <form id="signinForm" novalidate><label for="signinEmail">Email address</label><input id="signinEmail" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="signinStatus" value="${esc(lastEmail)}">
-    <div class="row"><button class="btn primary" type="submit" id="signinSubmit">Send magic link</button>${cancel?'<button class="btn" type="button" data-signin-cancel>Cancel</button>':''}</div>
+    <div class="row"><button class="btn primary" type="submit" id="signinSubmit">Send code</button>${cancel?'<button class="btn" type="button" data-signin-cancel>Cancel</button>':''}</div>
     <p id="signinStatus" class="st ${errMsg?'err':''}">${esc(errMsg)}</p></form></div>`;
   document.title='Sign in · AEGIS Daily Brief';renderRibbon();
   const f=document.getElementById('signinEmail');if(f)f.focus();
-  announce(errMsg||'Sign in required. Enter your email address to get a magic link.');
+  announce(errMsg||'Sign in required. Enter your email address to get a sign-in code.');
+}
+/* Step 2 of sign-in: the code field. Codes rather than links because mail-security scanners (Defender Safe Links on
+   the syr.edu tenant) fetch every URL in an email before delivery, which redeems a one-time link before the reader
+   sees it. A code is inert until typed. */
+function showCodeStep(email){
+  const m=document.getElementById('main');if(!m)return;
+  m.innerHTML=`<div class="panel signin"><h1>Enter your sign-in code</h1><p class="lead">We sent a 6-digit code to <b>${esc(email)}</b>. It expires in an hour; a new request replaces it.</p>
+    <form id="codeForm" novalidate><label for="signinCode">6-digit code</label><input id="signinCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="signinStatus" class="mono" style="letter-spacing:.25em;font-size:18px">
+    <div class="row"><button class="btn primary" type="submit" id="codeSubmit">Verify code</button><button class="btn" type="button" data-signin-back>Use a different email</button><button class="btn" type="button" data-signin-resend>Send a new code</button></div>
+    <p id="signinStatus" class="st ok">Check ${esc(email)} for the code. The message is from the AEGIS sender; look in junk if it is slow to arrive.</p></form></div>`;
+  const f=document.getElementById('signinCode');if(f)f.focus();
 }
 async function sendMagicLink(){
   const inp=document.getElementById('signinEmail'),st=document.getElementById('signinStatus'),btn=document.getElementById('signinSubmit');
@@ -1415,14 +1428,30 @@ async function sendMagicLink(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter a valid email address.','err');return}
   if(inp)inp.removeAttribute('aria-invalid');
   if(!SB){say('Sign-in is not configured for this page.','err');return}
-  if(btn)btn.disabled=true;say('Sending the sign-in link…');
+  if(btn)btn.disabled=true;say('Sending the code…');
   try{
     const {error}=await SB.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:truthy(CFG&&CFG.allowSignup)}});
     if(error)throw error;AUTH_ERR='';
-    say(`Check ${email} for a sign-in link. This page continues by itself once you are signed in.`,'ok');
+    showCodeStep(email);announce(`Code sent to ${email}. Enter the 6-digit code.`);
   }catch(e){const msg=String(e&&e.message||e);
-    say(/signups? not allowed|user not found|not allowed for otp/i.test(msg)?'That email is not on the access list. Ask an AEGIS admin to invite you.':'Could not send the link: '+msg,'err')}
-  finally{if(btn)btn.disabled=false}
+    say(/signups? not allowed|user not found|not allowed for otp/i.test(msg)?'That email is not on the access list. Ask an AEGIS admin to invite you.':/rate limit|too many|security purposes/i.test(msg)?'Too many requests for this address; wait a minute and try again.':'Could not send the code: '+msg,'err');
+    if(btn)btn.disabled=false}
+}
+async function verifyCode(){
+  const inp=document.getElementById('signinCode'),st=document.getElementById('signinStatus'),btn=document.getElementById('codeSubmit');
+  const code=String(inp&&inp.value||'').replace(/\D/g,'');
+  const say=(msg,cls)=>{if(st){st.textContent=msg;st.className='st '+(cls||'')}announce(msg)};
+  if(code.length!==6){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter the 6-digit code from the email.','err');return}
+  if(inp)inp.removeAttribute('aria-invalid');
+  if(!SB||!lastEmail){showSignIn();return}
+  if(btn)btn.disabled=true;say('Checking the code…');
+  try{
+    const {error}=await SB.auth.verifyOtp({email:lastEmail,token:code,type:'email'});
+    if(error)throw error;AUTH_ERR='';say('Signed in. Loading…','ok');   /* onAuthChange boots the page */
+  }catch(e){const msg=String(e&&e.message||e);
+    say(/expired|invalid/i.test(msg)?'That code is not valid any more. Send a new code and use the latest email.':'Could not verify the code: '+msg,'err');
+    if(inp){inp.setAttribute('aria-invalid','true');if(inp.select)inp.select();inp.focus()}
+    if(btn)btn.disabled=false}
 }
 async function signOut(){
   state.umenu=false;renderUmenu();

@@ -2,6 +2,14 @@
 
 Design-cycle notes for `apps/web/dashboard.html`. These used to ship inside the page behind a "Design notes" toggle in the account menu; they were moved here in v1.3.1 so readers never see them.
 
+## v1.3.2 · sign-in by code
+
+Sign-in is a two-step card: email, then a 6-digit code (`verifyOtp`, type `email`). Links were being redeemed by Microsoft Defender Safe Links on the syr.edu tenant before delivery, so readers only ever saw expired links. The Supabase Magic Link template now carries only `{{ .Token }}`. "Send a new code" and "Use a different email" on the code step; rate-limit and bad-code errors have their own wording.
+
+## v1.3.1 · rail wrap and notes removal
+
+Two-column pages measure the item column against the rail after render; when the rail would run more than 120px past the items it wraps into an auto-fill grid beneath them (120px hysteresis). The in-page design notes toggle was removed; this file replaces it.
+
 ## v1.3 · data adapter and sign-in
 
 The page loads its archive at startup from the container API (`/api/archive`) or, on static hosting, from the Supabase tables, chosen by `window.AEGIS_CONFIG`. With no config it falls back to the embedded sample. When sign-in is required, every view sits behind a Supabase magic link; signed-in viewers keep my areas, stars, recently viewed and theme in their account (browser storage stays as a cache), and feedback is saved to the team store. The ribbon names the data mode.

@@ -108,7 +108,7 @@ function renderAll(env, label) {
 
 /* ---- fake supabase-js (records calls) ---- */
 function fakeSupabase(db) {
-  const log = { otp: [], queries: [], uploads: [], signOut: 0 };
+  const log = { otp: [], verify: [], queries: [], uploads: [], signOut: 0 };
   let cb = null, session = db.session || null;
   const qb = table => {
     const st = { table, ops: [] };
@@ -125,6 +125,7 @@ function fakeSupabase(db) {
       getSession: async () => ({ data: { session }, error: null }),
       onAuthStateChange(fn) { cb = fn; return { data: { subscription: { unsubscribe() {} } } }; },
       signInWithOtp: async a => { log.otp.push(a); return { error: null }; },
+      verifyOtp: async a => { log.verify.push(a); if (a.token !== '123456') return { error: new Error('Token has expired or is invalid') }; return { data: {}, error: null }; },
       signOut: async () => { log.signOut++; session = null; cb && cb('SIGNED_OUT', null); return { error: null }; },
     },
     from: qb,
@@ -171,7 +172,7 @@ function fakeSupabase(db) {
     ok(env.run('BOOTED'), 'container (index) did not boot');
     ok(env.run('IDX.daily[0].__adopted===true'), 'server index was not adopted');
     const ribbon = env.els.get('ribbon').textContent;
-    ok(ribbon === `v1.3.1 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
+    ok(ribbon === `v1.3.2 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
     const c = renderAll(env, 'container/index');
     env.ctx.location.hash = '#archive'; env.run('render()');
     const arch = env.main().innerHTML;
@@ -207,7 +208,7 @@ function fakeSupabase(db) {
     console.log('3d. requireAuth, no Supabase: error banner');
   }
 
-  /* 4. static mode with requireAuth and a fake supabase-js: sign-in screen, magic link, session, settings, feedback, sign out */
+  /* 4. static mode with requireAuth and a fake supabase-js: sign-in screen, code sent and verified, session, settings, feedback, sign out */
   {
     const uid = '11111111-2222-3333-4444-555555555555';
     const fake = fakeSupabase({ answer(st) {
@@ -226,11 +227,20 @@ function fakeSupabase(db) {
     await env.run('sendMagicLink()');
     const otp = fake.log.otp[0] || {};
     ok(otp.email === 'Analyst@syr.edu' && otp.options.emailRedirectTo === 'http://localhost/' && otp.options.shouldCreateUser === false, 'signInWithOtp args ' + JSON.stringify(otp));
-    ok(/Check Analyst@syr.edu/.test(env.els.get('signinStatus').textContent), 'sign-in status not shown');
+    const m1 = env.main().innerHTML;
+    ok(/id="codeForm"/.test(m1) && /id="signinCode"/.test(m1) && env.ctx.__focused === 'signinCode', 'code step or focus missing');
+    ok(/Check Analyst@syr.edu for the code/.test(m1), 'code status not shown');
+    env.els.get('signinCode').value = '000000';
+    await env.run('verifyCode()');
+    ok(/not valid any more/.test(env.els.get('signinStatus').textContent), 'bad code not reported');
+    env.els.get('signinCode').value = '123456';
+    await env.run('verifyCode()');
+    const v = fake.log.verify[1] || {};
+    ok(v.email === 'Analyst@syr.edu' && v.token === '123456' && v.type === 'email', 'verifyOtp args ' + JSON.stringify(v));
     fake.signIn({ access_token: 'tok', user: { id: uid, email: 'analyst@syr.edu' } });
     await sleep(80); await env.run('booting||Promise.resolve()'); await sleep(40);
     ok(env.run('BOOTED') && env.run('MODE') === 'static', 'static mode did not boot after sign-in');
-    ok(env.els.get('ribbon').textContent === `v1.3.1 · ${nBriefs} briefs · static`, 'static ribbon');
+    ok(env.els.get('ribbon').textContent === `v1.3.2 · ${nBriefs} briefs · static`, 'static ribbon');
     ok(env.els.get('avatarBtn').textContent === 'A' && /analyst@syr\.edu/.test(env.els.get('avatarBtn').getAttribute('aria-label')), 'avatar not updated');
     ok(env.run("myAreas.has('perimeter')&&stars.has('x1')") && env.ctx.document.documentElement.getAttribute('data-theme') === 'light', 'remote settings not applied');
     const c = renderAll(env, 'static');
