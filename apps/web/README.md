@@ -42,7 +42,7 @@ Two ways to supply it, and the inline one wins:
    <script>window.AEGIS_CONFIG={"apiBase":"","supabaseUrl":"https://xyz.supabase.co","supabaseAnonKey":"eyJ...","requireAuth":true,"mode":"container"};</script>
    ```
 
-   Serialize with a JSON encoder and escape `<` as `<` so a value can never close the script tag. The marker sits after the `config.js` tag, so the injected config overrides a `config.js` if one exists. The worker can 404 `/config.js`.
+   Serialize with a JSON encoder and escape `<` as `<` so a value can never close the script tag. The marker sits after the `config.js` tag, so the injected config overrides a `config.js` if one exists. The worker serves `/config.js` as an empty `application/javascript` file (200, `Cache-Control: no-cache`), so the tag causes no 404 or MIME-type error.
 
 ## Sign-in (Supabase magic link)
 

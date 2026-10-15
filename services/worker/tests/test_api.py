@@ -165,3 +165,12 @@ def test_head_requests(seeded):
     assert c.head("/health").status_code == 200
     assert c.head("/briefs/2026-09-29.html").status_code == 200
     assert c.head("/").status_code == 200
+
+
+def test_config_js_is_an_empty_javascript_file(seeded):
+    s, vol = seeded
+    r = TestClient(create_app(s, vol)).get("/config.js")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/javascript")
+    assert r.content == b""
+    assert r.headers["cache-control"] == "no-cache"

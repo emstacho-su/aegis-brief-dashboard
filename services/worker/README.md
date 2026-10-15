@@ -93,6 +93,7 @@ problems go to stderr), 2 for a usage error. A validation failure writes nothing
 | Route | Notes |
 |---|---|
 | `GET /` | `dashboard.html` with `<script>window.AEGIS_CONFIG={...}</script>`. The script replaces the `<!-- AEGIS_CONFIG_INJECT -->` marker if the page has one. Otherwise it goes before the first `<script>`. The JSON is escaped so it cannot close the tag. Sent with `no-cache`. |
+| `GET /config.js` | Empty `application/javascript` body, `no-cache`. The page's config is injected inline at `/`; this file exists so the page's `config.js` tag does not 404. Never authenticated. |
 | `GET /health` | `{status, retained, today, volume_root}`. `retained` is a count. Never authenticated. |
 | `GET /api/config` | `{apiBase:'', supabaseUrl, supabaseAnonKey, requireAuth, mode:'container'}` |
 | `GET /api/archive` | `{briefs: {date: brief}, index, manifest}` |
@@ -107,7 +108,7 @@ With `REQUIRE_AUTH=1`, the three data routes require a Supabase access token. Se
 `Authorization: Bearer <jwt>`, or as the `aegis_token` cookie for links opened in a new
 tab. The worker checks the token against `${SUPABASE_URL}/auth/v1/user` and caches a
 positive result for 60 seconds. If `REQUIRE_AUTH=1` is set without the Supabase values,
-those routes fail closed with 503. `/`, `/health` and `/api/config` stay public.
+those routes fail closed with 503. `/`, `/config.js`, `/health` and `/api/config` stay public.
 
 ## Supabase sync
 
