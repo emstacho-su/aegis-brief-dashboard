@@ -494,7 +494,7 @@ footer .accent{color:var(--accent)}
   <div style="display:flex;align-items:center;gap:.5rem;min-width:0"><button class="menubtn" id="menubtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side">☰</button><div class="brand">SU InfoSec<span class="pipe">|</span>AEGIS Daily Brief</div></div>
   <div class="hdr-right">
     <div class="search"><input id="q" type="search" placeholder="Search items, CVEs" autocomplete="off" aria-label="Search items"><div class="sres" id="sres" hidden></div></div>
-    <span class="ribbon" id="ribbon">v1.3.2</span>
+    <span class="ribbon" id="ribbon">v1.3.3</span>
     <button class="plus" id="fbBtn" title="Report a bug or request a change" aria-label="Report a bug or request a change"><span aria-hidden="true">+</span></button>
     <button class="avatar" id="avatarBtn" aria-expanded="false" aria-haspopup="menu" aria-label="Account menu" title="Account">A</button>
     <div class="umenu" id="umenu" hidden role="menu"></div>
@@ -1111,7 +1111,7 @@ rank 2  chunk c_1a07  doc d_feeds/${esc(it.source.name.toLowerCase().replace(/\s
 /* =========================================================================
    7. Notes, mount, events
    ========================================================================= */
-function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.3.2 · ${DATES.length} briefs · ${MODE}`:'v1.3.2'}
+function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.3.3 · ${DATES.length} briefs · ${MODE}`:'v1.3.3'}
 state.coll=new Set(store.get('coll',[]));state.side=new Set();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
 const I={
  home:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -1402,7 +1402,7 @@ function showSignIn(){
   SIGNIN=true;const m=document.getElementById('main');if(!m)return;
   document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
   const cancel=BOOTED&&!needAuth();const errMsg=AUTH_ERR?`The last sign-in attempt did not work (${AUTH_ERR}). Request a new code.`:'';
-  m.innerHTML=`<div class="panel signin"><h1>Sign in to the AEGIS Daily Brief</h1><p class="lead">Enter your work email. We will email you a 6-digit code to type in here.</p>
+  m.innerHTML=`<div class="panel signin"><h1>Sign in to the AEGIS Daily Brief</h1><p class="lead">Enter your work email. We will email you a one-time code to type in here.</p>
     <form id="signinForm" novalidate><label for="signinEmail">Email address</label><input id="signinEmail" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="signinStatus" value="${esc(lastEmail)}">
     <div class="row"><button class="btn primary" type="submit" id="signinSubmit">Send code</button>${cancel?'<button class="btn" type="button" data-signin-cancel>Cancel</button>':''}</div>
     <p id="signinStatus" class="st ${errMsg?'err':''}">${esc(errMsg)}</p></form></div>`;
@@ -1415,8 +1415,8 @@ function showSignIn(){
    sees it. A code is inert until typed. */
 function showCodeStep(email){
   const m=document.getElementById('main');if(!m)return;
-  m.innerHTML=`<div class="panel signin"><h1>Enter your sign-in code</h1><p class="lead">We sent a 6-digit code to <b>${esc(email)}</b>. It expires in an hour; a new request replaces it.</p>
-    <form id="codeForm" novalidate><label for="signinCode">6-digit code</label><input id="signinCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required aria-describedby="signinStatus" class="mono" style="letter-spacing:.25em;font-size:18px">
+  m.innerHTML=`<div class="panel signin"><h1>Enter your sign-in code</h1><p class="lead">We sent a one-time code to <b>${esc(email)}</b>. It expires in an hour; a new request replaces it.</p>
+    <form id="codeForm" novalidate><label for="signinCode">Code from the email</label><input id="signinCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="12" required aria-describedby="signinStatus" class="mono" style="letter-spacing:.25em;font-size:18px">
     <div class="row"><button class="btn primary" type="submit" id="codeSubmit">Verify code</button><button class="btn" type="button" data-signin-back>Use a different email</button><button class="btn" type="button" data-signin-resend>Send a new code</button></div>
     <p id="signinStatus" class="st ok">Check ${esc(email)} for the code. The message is from the AEGIS sender; look in junk if it is slow to arrive.</p></form></div>`;
   const f=document.getElementById('signinCode');if(f)f.focus();
@@ -1432,7 +1432,7 @@ async function sendMagicLink(){
   try{
     const {error}=await SB.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:truthy(CFG&&CFG.allowSignup)}});
     if(error)throw error;AUTH_ERR='';
-    showCodeStep(email);announce(`Code sent to ${email}. Enter the 6-digit code.`);
+    showCodeStep(email);announce(`Code sent to ${email}. Enter the code from the email.`);
   }catch(e){const msg=String(e&&e.message||e);
     say(/signups? not allowed|user not found|not allowed for otp/i.test(msg)?'That email is not on the access list. Ask an AEGIS admin to invite you.':/rate limit|too many|security purposes/i.test(msg)?'Too many requests for this address; wait a minute and try again.':'Could not send the code: '+msg,'err');
     if(btn)btn.disabled=false}
@@ -1441,7 +1441,7 @@ async function verifyCode(){
   const inp=document.getElementById('signinCode'),st=document.getElementById('signinStatus'),btn=document.getElementById('codeSubmit');
   const code=String(inp&&inp.value||'').replace(/\D/g,'');
   const say=(msg,cls)=>{if(st){st.textContent=msg;st.className='st '+(cls||'')}announce(msg)};
-  if(code.length!==6){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter the 6-digit code from the email.','err');return}
+  if(code.length<6||code.length>10){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter the numeric code from the email (6 to 10 digits).','err');return}
   if(inp)inp.removeAttribute('aria-invalid');
   if(!SB||!lastEmail){showSignIn();return}
   if(btn)btn.disabled=true;say('Checking the code…');

@@ -172,7 +172,7 @@ function fakeSupabase(db) {
     ok(env.run('BOOTED'), 'container (index) did not boot');
     ok(env.run('IDX.daily[0].__adopted===true'), 'server index was not adopted');
     const ribbon = env.els.get('ribbon').textContent;
-    ok(ribbon === `v1.3.2 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
+    ok(ribbon === `v1.3.3 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
     const c = renderAll(env, 'container/index');
     env.ctx.location.hash = '#archive'; env.run('render()');
     const arch = env.main().innerHTML;
@@ -230,9 +230,12 @@ function fakeSupabase(db) {
     const m1 = env.main().innerHTML;
     ok(/id="codeForm"/.test(m1) && /id="signinCode"/.test(m1) && env.ctx.__focused === 'signinCode', 'code step or focus missing');
     ok(/Check Analyst@syr.edu for the code/.test(m1), 'code status not shown');
-    env.els.get('signinCode').value = '000000';
+    env.els.get('signinCode').value = '12345';
     await env.run('verifyCode()');
-    ok(/not valid any more/.test(env.els.get('signinStatus').textContent), 'bad code not reported');
+    ok(/6 to 10 digits/.test(env.els.get('signinStatus').textContent), 'short code not rejected locally');
+    env.els.get('signinCode').value = '21229477';
+    await env.run('verifyCode()');
+    ok(/not valid any more/.test(env.els.get('signinStatus').textContent) && fake.log.verify[0].token === '21229477', '8-digit code not passed through');
     env.els.get('signinCode').value = '123456';
     await env.run('verifyCode()');
     const v = fake.log.verify[1] || {};
@@ -240,7 +243,7 @@ function fakeSupabase(db) {
     fake.signIn({ access_token: 'tok', user: { id: uid, email: 'analyst@syr.edu' } });
     await sleep(80); await env.run('booting||Promise.resolve()'); await sleep(40);
     ok(env.run('BOOTED') && env.run('MODE') === 'static', 'static mode did not boot after sign-in');
-    ok(env.els.get('ribbon').textContent === `v1.3.2 · ${nBriefs} briefs · static`, 'static ribbon');
+    ok(env.els.get('ribbon').textContent === `v1.3.3 · ${nBriefs} briefs · static`, 'static ribbon');
     ok(env.els.get('avatarBtn').textContent === 'A' && /analyst@syr\.edu/.test(env.els.get('avatarBtn').getAttribute('aria-label')), 'avatar not updated');
     ok(env.run("myAreas.has('perimeter')&&stars.has('x1')") && env.ctx.document.documentElement.getAttribute('data-theme') === 'light', 'remote settings not applied');
     const c = renderAll(env, 'static');

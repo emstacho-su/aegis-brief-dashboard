@@ -2,6 +2,10 @@
 
 Design-cycle notes for `apps/web/dashboard.html`. These used to ship inside the page behind a "Design notes" toggle in the account menu; they were moved here in v1.3.1 so readers never see them.
 
+## v1.3.3 · code length
+
+The code field accepts 6 to 10 digits; the Supabase project sends 8-digit codes (Email OTP Length). Copy no longer says "6-digit".
+
 ## v1.3.2 · sign-in by code
 
 Sign-in is a two-step card: email, then a 6-digit code (`verifyOtp`, type `email`). Links were being redeemed by Microsoft Defender Safe Links on the syr.edu tenant before delivery, so readers only ever saw expired links. The Supabase Magic Link template now carries only `{{ .Token }}`. "Send a new code" and "Use a different email" on the code step; rate-limit and bad-code errors have their own wording.
