@@ -3,57 +3,6 @@
  "baseline_date": null,
  "items": [
   {
-   "item_id": "item-76f65953",
-   "kind": "cve",
-   "areas": [
-    "endpoints",
-    "perimeter"
-   ],
-   "tier": 1,
-   "priority": "critical",
-   "status": "continued",
-   "continued_days": 5,
-   "score": 85,
-   "score_parts": {},
-   "tlp": "amber",
-   "first_seen": "2026-08-28",
-   "confidence": "",
-   "identifiers": [
-    "CVE-2026-92062",
-    "CVE-2026-90011"
-   ],
-   "title": "Kestrel Device Manager: stored cross-site scripting",
-   "description": "Kestrel Device Manager is affected by stored cross-site scripting. Status: exploited in the wild. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
-   "source": {
-    "name": "Vendor advisory",
-    "url": "",
-    "retrieved": "2026-09-01"
-   },
-   "su_impact": "The institution runs the Device Manager in one business unit; exposure confirmed.",
-   "recommended_actions": [
-    "Apply the vendor update.",
-    "Confirm the decommission date.",
-    "Confirm the decommission date.",
-    "Restrict the exposed service to the VPN.",
-    "Confirm the decommission date."
-   ],
-   "escalation": {
-    "required": true,
-    "to": "Service owner",
-    "note": "Escalation language present in the item"
-   },
-   "cve_published": null,
-   "attack": [],
-   "indicators": [
-    [
-     "domain",
-     "cdn-738.example.test"
-    ]
-   ],
-   "delta": "Promoted after the exposure register changed.",
-   "body": "Exploitation status: exploited in the wild. Promoted after the exposure register changed. This analysis text is synthetic."
-  },
-  {
    "item_id": "item-4182e7d6",
    "kind": "campaign",
    "areas": [
@@ -291,44 +240,6 @@
    "body": "Exploitation status: no exploitation observed. Carried for the open exposure row only. This analysis text is synthetic."
   },
   {
-   "item_id": "item-97ae17f7",
-   "kind": "cve",
-   "areas": [
-    "endpoints"
-   ],
-   "tier": 2,
-   "priority": "medium",
-   "status": "continued",
-   "continued_days": 18,
-   "score": 58,
-   "score_parts": {},
-   "tlp": "amber",
-   "first_seen": "2026-08-15",
-   "confidence": "",
-   "identifiers": [
-    "CVE-2026-94910"
-   ],
-   "title": "Halyard Workstation Image: authentication bypass",
-   "description": "Halyard Workstation Image is affected by authentication bypass. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
-   "source": {
-    "name": "Vendor advisory",
-    "url": "",
-    "retrieved": "2026-09-01"
-   },
-   "su_impact": "",
-   "recommended_actions": [],
-   "escalation": {
-    "required": false,
-    "to": "",
-    "note": ""
-   },
-   "cve_published": null,
-   "attack": [],
-   "indicators": [],
-   "delta": "Vendor fix released; awaiting deployment confirmation.",
-   "body": "Exploitation status: added to a government known-exploited list. Vendor fix released; awaiting deployment confirmation. This analysis text is synthetic."
-  },
-  {
    "item_id": "item-2cb0c9b4",
    "kind": "campaign",
    "areas": [
@@ -440,45 +351,6 @@
    "indicators": [],
    "delta": "Carried for the open exposure row only.",
    "body": "Exploitation status: added to a government known-exploited list. Carried for the open exposure row only. This analysis text is synthetic."
-  },
-  {
-   "item_id": "item-65c96399",
-   "kind": "cve",
-   "areas": [
-    "perimeter"
-   ],
-   "tier": 2,
-   "priority": "medium",
-   "status": "continued",
-   "continued_days": 22,
-   "score": 48,
-   "score_parts": {},
-   "tlp": "amber",
-   "first_seen": "2026-08-11",
-   "confidence": "",
-   "identifiers": [
-    "CVE-2026-97489",
-    "CVE-2026-93473"
-   ],
-   "title": "Saltmarsh Access Gateway: memory disclosure leaking session tokens",
-   "description": "Saltmarsh Access Gateway is affected by memory disclosure leaking session tokens. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
-   "source": {
-    "name": "Vendor advisory",
-    "url": "",
-    "retrieved": "2026-09-01"
-   },
-   "su_impact": "",
-   "recommended_actions": [],
-   "escalation": {
-    "required": false,
-    "to": "",
-    "note": ""
-   },
-   "cve_published": null,
-   "attack": [],
-   "indicators": [],
-   "delta": "Score lowered after a patch was confirmed deployed.",
-   "body": "Exploitation status: added to a government known-exploited list. Score lowered after a patch was confirmed deployed. This analysis text is synthetic."
   },
   {
    "item_id": "item-90f43cc7",
@@ -1237,43 +1109,6 @@
    "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
   },
   {
-   "item_id": "item-00863f4d",
-   "kind": "campaign",
-   "areas": [
-    "endpoints",
-    "perimeter"
-   ],
-   "tier": 2,
-   "priority": "medium",
-   "status": "new",
-   "continued_days": 0,
-   "score": 50,
-   "score_parts": {},
-   "tlp": "amber",
-   "first_seen": "2026-09-01",
-   "confidence": "",
-   "identifiers": [],
-   "title": "Bellwether SSO Broker advisory: authentication bypass",
-   "description": "Bellwether SSO Broker advisory is affected by authentication bypass. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
-   "source": {
-    "name": "Vendor advisory",
-    "url": "",
-    "retrieved": "2026-09-01"
-   },
-   "su_impact": "",
-   "recommended_actions": [],
-   "escalation": {
-    "required": false,
-    "to": "",
-    "note": ""
-   },
-   "cve_published": null,
-   "attack": [],
-   "indicators": [],
-   "delta": "New this cycle.",
-   "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
-  },
-  {
    "item_id": "item-811786ad",
    "kind": "campaign",
    "areas": [
@@ -1383,114 +1218,6 @@
    "indicators": [],
    "delta": "New this cycle.",
    "body": "Exploitation status: no exploitation observed. New this cycle. This analysis text is synthetic."
-  },
-  {
-   "item_id": "item-d126327a",
-   "kind": "campaign",
-   "areas": [
-    "perimeter"
-   ],
-   "tier": 3,
-   "priority": "low",
-   "status": "new",
-   "continued_days": 0,
-   "score": 25,
-   "score_parts": {},
-   "tlp": "amber",
-   "first_seen": "2026-09-01",
-   "confidence": "",
-   "identifiers": [],
-   "title": "Gale Marten campaign against campus networks via token theft from browser sessions",
-   "description": "Gale Marten campaign against campus networks via token theft from browser sessions is affected by pre-authentication remote code execution. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
-   "source": {
-    "name": "Vendor advisory",
-    "url": "",
-    "retrieved": "2026-09-01"
-   },
-   "su_impact": "",
-   "recommended_actions": [],
-   "escalation": {
-    "required": false,
-    "to": "",
-    "note": ""
-   },
-   "cve_published": null,
-   "attack": [],
-   "indicators": [],
-   "delta": "New this cycle.",
-   "body": "Exploitation status: exploitation reported by one vendor. New this cycle. This analysis text is synthetic."
-  },
-  {
-   "item_id": "item-d126327a",
-   "kind": "campaign",
-   "areas": [
-    "cloud"
-   ],
-   "tier": 3,
-   "priority": "low",
-   "status": "new",
-   "continued_days": 0,
-   "score": 25,
-   "score_parts": {},
-   "tlp": "amber",
-   "first_seen": "2026-09-01",
-   "confidence": "",
-   "identifiers": [],
-   "title": "Gale Marten campaign against campus networks via token theft from browser sessions",
-   "description": "Gale Marten campaign against campus networks via token theft from browser sessions is affected by pre-authentication remote code execution. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
-   "source": {
-    "name": "Vendor advisory",
-    "url": "",
-    "retrieved": "2026-09-01"
-   },
-   "su_impact": "",
-   "recommended_actions": [],
-   "escalation": {
-    "required": false,
-    "to": "",
-    "note": ""
-   },
-   "cve_published": null,
-   "attack": [],
-   "indicators": [],
-   "delta": "New this cycle.",
-   "body": "Exploitation status: exploitation reported by one vendor. New this cycle. This analysis text is synthetic."
-  },
-  {
-   "item_id": "item-d126327a",
-   "kind": "campaign",
-   "areas": [
-    "other"
-   ],
-   "tier": 3,
-   "priority": "low",
-   "status": "new",
-   "continued_days": 0,
-   "score": 25,
-   "score_parts": {},
-   "tlp": "amber",
-   "first_seen": "2026-09-01",
-   "confidence": "",
-   "identifiers": [],
-   "title": "Gale Marten campaign against campus networks via token theft from browser sessions",
-   "description": "Gale Marten campaign against campus networks via token theft from browser sessions is affected by pre-authentication remote code execution. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
-   "source": {
-    "name": "Vendor advisory",
-    "url": "",
-    "retrieved": "2026-09-01"
-   },
-   "su_impact": "",
-   "recommended_actions": [],
-   "escalation": {
-    "required": false,
-    "to": "",
-    "note": ""
-   },
-   "cve_published": null,
-   "attack": [],
-   "indicators": [],
-   "delta": "New this cycle.",
-   "body": "Exploitation status: exploitation reported by one vendor. New this cycle. This analysis text is synthetic."
   },
   {
    "item_id": "item-f5ca38f7",
