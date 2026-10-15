@@ -1,0 +1,112 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  worker:
+    name: worker tests, schema, image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/worker/pyproject.toml
+
+      - name: Install worker (dev extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "services/worker[dev]" || pip install -e services/worker pytest httpx
+          pip install jsonschema pyyaml
+
+      - name: Worker tests
+        working-directory: services/worker
+        run: python -m pytest -q
+
+      - name: Validate sample briefs against packages/brief.schema.json
+        run: python scripts/validate_briefs.py data/briefs
+
+      - name: Platform checks (compose, static config, seed script)
+        env:
+          SUPABASE_URL: https://example.supabase.co
+          SUPABASE_ANON_KEY: sb_publishable_ci_placeholder
+        run: |
+          docker compose config --quiet
+          docker compose --profile replay config --quiet
+          python scripts/build_static.py --out "$RUNNER_TEMP/config.js"
+          grep -q '"mode": "static"' "$RUNNER_TEMP/config.js"
+          python -c "import ast,sys; [ast.parse(open(f).read(), f) for f in sys.argv[1:]]" \
+            supabase/seed.py scripts/build_static.py scripts/new_brief.py \
+            scripts/validate_briefs.py scripts/extract_web_js.py
+          python supabase/seed.py --dry-run > /dev/null
+          bash -n scripts/dev.sh scripts/replay.sh
+
+      - name: Build image (no push)
+        run: |
+          TAG="${GITHUB_SHA::12}"
+          docker build -f services/worker/Dockerfile -t "aegis-brief-dashboard:${TAG}" .
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+
+      - name: Smoke test the image
+        run: |
+          docker run -d --name smoke -p 8080:8080 "aegis-brief-dashboard:${TAG}"
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/health > health.json; then break; fi
+            sleep 2
+          done
+          cat health.json
+          python - <<'EOF'
+          import json
+          h = json.load(open("health.json"))
+          r = h.get("retained")
+          n = len(r) if isinstance(r, list) else int(r or 0)  # count or list of dates
+          assert n >= 1, f"volume was not seeded: {h}"
+          print("seeded briefs:", n, "today:", h.get("today"))
+          EOF
+          # The worker swaps the inject marker for an inline window.AEGIS_CONFIG script.
+          curl -fsS http://127.0.0.1:8080/ > page.html
+          if grep -q "<!-- AEGIS_CONFIG_INJECT -->" page.html; then
+            echo "config was not injected into /"; exit 1
+          fi
+          curl -fsS -o /dev/null http://127.0.0.1:8080/api/archive
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs smoke 2>&1 | tail -200 || true
+
+  web:
+    name: web syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Extract inline scripts from dashboard.html
+        run: python scripts/extract_web_js.py "$RUNNER_TEMP/web"
+
+      - name: node --check
+        run: |
+          for f in "$RUNNER_TEMP"/web/*; do
+            echo "node --check $f"
+            node --check "$f"
+          done

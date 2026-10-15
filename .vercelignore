@@ -1,0 +1,11 @@
+# Upload only what the static build needs: apps/web and scripts/build_static.py.
+services/
+supabase/
+data/
+docs/
+packages/
+.github/
+volume/
+apps/web/test/
+.env
+.env.*

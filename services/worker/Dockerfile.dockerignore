@@ -1,0 +1,13 @@
+# BuildKit reads <Dockerfile>.dockerignore; context is the repo root.
+**/.git
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+**/.venv
+**/*.egg-info
+services/worker/tests
+services/worker/aegis_worker/_shared
+supabase
+docs

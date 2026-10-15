@@ -1,0 +1,1640 @@
+{
+ "date": "2026-09-15",
+ "baseline_date": "2026-09-14",
+ "items": [
+  {
+   "item_id": "item-76f65953",
+   "kind": "cve",
+   "areas": [
+    "endpoints"
+   ],
+   "tier": 1,
+   "priority": "critical",
+   "status": "continued",
+   "continued_days": 19,
+   "score": 90,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-08-28",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-92062",
+    "CVE-2026-90011"
+   ],
+   "title": "Kestrel Device Manager: stored cross-site scripting",
+   "description": "Kestrel Device Manager is affected by stored cross-site scripting. Status: exploited in the wild. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "Score raised from 87 to 90 after new reporting.",
+   "body": "Exploitation status: exploited in the wild. Score raised from 87 to 90 after new reporting. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-edb6d3eb",
+   "kind": "cve",
+   "areas": [
+    "webapps",
+    "research"
+   ],
+   "tier": 1,
+   "priority": "critical",
+   "status": "continued",
+   "continued_days": 3,
+   "score": 88,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-13",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-96986"
+   ],
+   "title": "Lantern MFA Connector: deserialization of untrusted data",
+   "description": "Lantern MFA Connector is affected by deserialization of untrusted data. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "Score raised from 86 to 88 after new reporting.",
+   "body": "Exploitation status: exploitation reported by one vendor. Score raised from 86 to 88 after new reporting. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-65c96399",
+   "kind": "cve",
+   "areas": [
+    "perimeter"
+   ],
+   "tier": 1,
+   "priority": "critical",
+   "status": "continued",
+   "continued_days": 36,
+   "score": 85,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-08-11",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-95503",
+    "CVE-2026-97489",
+    "CVE-2026-93473"
+   ],
+   "title": "Saltmarsh Access Gateway: memory disclosure leaking session tokens",
+   "description": "Saltmarsh Access Gateway is affected by memory disclosure leaking session tokens. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "Score lowered from 88 to 85; exposure unchanged.",
+   "body": "Exploitation status: added to a government known-exploited list. Score lowered from 88 to 85; exposure unchanged. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-207922be",
+   "kind": "cve",
+   "areas": [
+    "perimeter",
+    "email"
+   ],
+   "tier": 1,
+   "priority": "critical",
+   "status": "new",
+   "continued_days": 0,
+   "score": 80,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-97392"
+   ],
+   "title": "Kestrel Access Gateway: command injection in a management endpoint",
+   "description": "Kestrel Access Gateway is affected by command injection in a management endpoint. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-b65449d0",
+   "kind": "cve",
+   "areas": [
+    "other"
+   ],
+   "tier": 1,
+   "priority": "high",
+   "status": "continued",
+   "continued_days": 7,
+   "score": 75,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-09",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-94250",
+    "CVE-2026-92983"
+   ],
+   "title": "Halyard Device Manager advisory: privilege escalation via a race condition",
+   "description": "Halyard Device Manager advisory is affected by privilege escalation via a race condition. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "Score raised from 65 to 75 after new reporting.",
+   "body": "Exploitation status: added to a government known-exploited list. Score raised from 65 to 75 after new reporting. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-154802b5",
+   "kind": "campaign",
+   "areas": [
+    "identity",
+    "endpoints",
+    "perimeter"
+   ],
+   "tier": 2,
+   "priority": "high",
+   "status": "new",
+   "continued_days": 0,
+   "score": 70,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Granary Identity Gateway advisory: deserialization of untrusted data",
+   "description": "Granary Identity Gateway advisory is affected by deserialization of untrusted data. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: exploitation reported by one vendor. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-8b43ffd4",
+   "kind": "cve",
+   "areas": [
+    "endpoints",
+    "perimeter"
+   ],
+   "tier": 2,
+   "priority": "high",
+   "status": "new",
+   "continued_days": 0,
+   "score": 66,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-99807",
+    "CVE-2026-91134"
+   ],
+   "title": "Halyard Workstation Image: improper certificate validation",
+   "description": "Halyard Workstation Image is affected by improper certificate validation. Status: exploited in the wild. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: exploited in the wild. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-19c4a6f1",
+   "kind": "cve",
+   "areas": [
+    "identity",
+    "perimeter",
+    "cloud"
+   ],
+   "tier": 2,
+   "priority": "high",
+   "status": "new",
+   "continued_days": 0,
+   "score": 65,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-97873"
+   ],
+   "title": "Dovetail Directory Service: privilege escalation via a race condition",
+   "description": "Dovetail Directory Service is affected by privilege escalation via a race condition. Status: no exploitation observed. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: no exploitation observed. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-7f442c58",
+   "kind": "cve",
+   "areas": [
+    "perimeter"
+   ],
+   "tier": 2,
+   "priority": "high",
+   "status": "new",
+   "continued_days": 0,
+   "score": 60,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-98686"
+   ],
+   "title": "Tessera Edge Firewall: stored cross-site scripting",
+   "description": "Tessera Edge Firewall is affected by stored cross-site scripting. Status: proof of concept public. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: proof of concept public. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-1b5e8ae8",
+   "kind": "cve",
+   "areas": [
+    "identity",
+    "perimeter"
+   ],
+   "tier": 2,
+   "priority": "high",
+   "status": "new",
+   "continued_days": 0,
+   "score": 60,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-98644"
+   ],
+   "title": "Pewter SSO Broker: command injection in a management endpoint",
+   "description": "Pewter SSO Broker is affected by command injection in a management endpoint. Status: scanning activity rising. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: scanning activity rising. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-5211190a",
+   "kind": "campaign",
+   "areas": [
+    "identity",
+    "perimeter",
+    "cloud"
+   ],
+   "tier": 2,
+   "priority": "high",
+   "status": "new",
+   "continued_days": 0,
+   "score": 60,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Pewter Directory Service advisory: authentication bypass",
+   "description": "Pewter Directory Service advisory is affected by authentication bypass. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-67da763c",
+   "kind": "campaign",
+   "areas": [
+    "endpoints",
+    "perimeter",
+    "supply"
+   ],
+   "tier": 2,
+   "priority": "high",
+   "status": "new",
+   "continued_days": 0,
+   "score": 60,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Tessera Desktop Client advisory: deserialization of untrusted data",
+   "description": "Tessera Desktop Client advisory is affected by deserialization of untrusted data. Status: no exploitation observed. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: no exploitation observed. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-aeb84880",
+   "kind": "campaign",
+   "areas": [
+    "identity",
+    "endpoints",
+    "perimeter"
+   ],
+   "tier": 2,
+   "priority": "medium",
+   "status": "new",
+   "continued_days": 0,
+   "score": 58,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Halyard Directory Service advisory: privilege escalation via a race condition",
+   "description": "Halyard Directory Service advisory is affected by privilege escalation via a race condition. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-a1382172",
+   "kind": "campaign",
+   "areas": [
+    "endpoints",
+    "perimeter"
+   ],
+   "tier": 2,
+   "priority": "medium",
+   "status": "new",
+   "continued_days": 0,
+   "score": 57,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Driftwood Crane campaign against campus networks via QR-code lures",
+   "description": "Driftwood Crane campaign against campus networks via QR-code lures is affected by pre-authentication remote code execution. Status: scanning activity rising. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: scanning activity rising. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-d8ff7c47",
+   "kind": "campaign",
+   "areas": [
+    "identity",
+    "perimeter",
+    "email"
+   ],
+   "tier": 2,
+   "priority": "medium",
+   "status": "new",
+   "continued_days": 0,
+   "score": 55,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Rookery Credential Vault advisory: command injection in a management endpoint",
+   "description": "Rookery Credential Vault advisory is affected by command injection in a management endpoint. Status: exploited in the wild. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: exploited in the wild. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-a2c3aed5",
+   "kind": "cve",
+   "areas": [
+    "cloud"
+   ],
+   "tier": 2,
+   "priority": "medium",
+   "status": "new",
+   "continued_days": 0,
+   "score": 48,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-94938",
+    "CVE-2026-96427"
+   ],
+   "title": "Nimbus Device Manager: pre-authentication remote code execution",
+   "description": "Nimbus Device Manager is affected by pre-authentication remote code execution. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-e4c723eb",
+   "kind": "cve",
+   "areas": [
+    "perimeter",
+    "ai"
+   ],
+   "tier": 2,
+   "priority": "medium",
+   "status": "new",
+   "continued_days": 0,
+   "score": 45,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [
+    "CVE-2026-96602",
+    "CVE-2026-92719"
+   ],
+   "title": "Tessera MFA Connector: command injection in a management endpoint",
+   "description": "Tessera MFA Connector is affected by command injection in a management endpoint. Status: no exploitation observed. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: no exploitation observed. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-262bb9da",
+   "kind": "campaign",
+   "areas": [
+    "perimeter",
+    "webapps"
+   ],
+   "tier": 2,
+   "priority": "medium",
+   "status": "new",
+   "continued_days": 0,
+   "score": 45,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Pewter Identity Gateway advisory: deserialization of untrusted data",
+   "description": "Pewter Identity Gateway advisory is affected by deserialization of untrusted data. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [
+    [
+     "ipv4",
+     "203.0.113.72"
+    ]
+   ],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: exploitation reported by one vendor. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-d59eced1",
+   "kind": "campaign",
+   "areas": [
+    "endpoints"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Orrin Endpoint Agent advisory: authentication bypass",
+   "description": "Orrin Endpoint Agent advisory is affected by authentication bypass. Status: no exploitation observed. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: no exploitation observed. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-e7944798",
+   "kind": "campaign",
+   "areas": [
+    "identity",
+    "perimeter",
+    "email"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Halyard Directory Service advisory: stored cross-site scripting",
+   "description": "Halyard Directory Service advisory is affected by stored cross-site scripting. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: exploitation reported by one vendor. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-9f14025a",
+   "kind": "campaign",
+   "areas": [
+    "perimeter"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Saltmarsh Desktop Client advisory: command injection in a management endpoint",
+   "description": "Saltmarsh Desktop Client advisory is affected by command injection in a management endpoint. Status: exploited in the wild. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: exploited in the wild. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-624b60c5",
+   "kind": "campaign",
+   "areas": [
+    "identity",
+    "perimeter",
+    "webapps"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Wicket Edge Firewall advisory: stored cross-site scripting",
+   "description": "Wicket Edge Firewall advisory is affected by stored cross-site scripting. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: exploitation reported by one vendor. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-d126327a",
+   "kind": "campaign",
+   "areas": [
+    "perimeter"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Gale Marten campaign against campus networks via token theft from browser sessions",
+   "description": "Gale Marten campaign against campus networks via token theft from browser sessions is affected by pre-authentication remote code execution. Status: exploitation reported by one vendor. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: exploitation reported by one vendor. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-59e19706",
+   "kind": "campaign",
+   "areas": [
+    "perimeter",
+    "email",
+    "webapps"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Rookery DNS Resolver advisory: stored cross-site scripting",
+   "description": "Rookery DNS Resolver advisory is affected by stored cross-site scripting. Status: no exploitation observed. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: no exploitation observed. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-b7a56873",
+   "kind": "campaign",
+   "areas": [
+    "perimeter"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Indigo Wren campaign against campus networks via QR-code lures",
+   "description": "Indigo Wren campaign against campus networks via QR-code lures is affected by stored cross-site scripting. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-79807d70",
+   "kind": "campaign",
+   "areas": [
+    "perimeter"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Basalt Owl campaign against research institutions via helpdesk impersonation",
+   "description": "Basalt Owl campaign against research institutions via helpdesk impersonation is affected by path traversal to arbitrary file read. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
+  },
+  {
+   "item_id": "item-f5ca38f7",
+   "kind": "campaign",
+   "areas": [
+    "other"
+   ],
+   "tier": 3,
+   "priority": "low",
+   "status": "new",
+   "continued_days": 0,
+   "score": 25,
+   "score_parts": {},
+   "tlp": "amber_strict",
+   "first_seen": "2026-09-15",
+   "confidence": "",
+   "identifiers": [],
+   "title": "Quill Print Server advisory: privilege escalation via a race condition",
+   "description": "Quill Print Server advisory is affected by privilege escalation via a race condition. Status: added to a government known-exploited list. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
+   "source": {
+    "name": "Vendor advisory",
+    "url": "",
+    "retrieved": "2026-09-15"
+   },
+   "su_impact": "",
+   "recommended_actions": [],
+   "escalation": {
+    "required": false,
+    "to": "",
+    "note": ""
+   },
+   "cve_published": null,
+   "attack": [],
+   "indicators": [],
+   "delta": "New this cycle.",
+   "body": "Exploitation status: added to a government known-exploited list. New this cycle. This analysis text is synthetic."
+  }
+ ],
+ "outstanding": [],
+ "exposure": [
+  {
+   "item": "Cinder Endpoint Agent (primary)",
+   "state": "vulnerable",
+   "state_text": "VULNERABLE",
+   "basis": "Vault note from prior cycle",
+   "days": 19,
+   "standing": false,
+   "areas": [
+    "endpoints",
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Saltmarsh Edge Firewall (departmental)",
+   "state": "vulnerable",
+   "state_text": "VULNERABLE",
+   "basis": "No record found",
+   "days": 36,
+   "standing": false,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Lantern Licensing Service (legacy)",
+   "state": "vulnerable",
+   "state_text": "VULNERABLE",
+   "basis": "No record found",
+   "days": 158,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Tessera VPN Appliance (primary)",
+   "state": "vulnerable",
+   "state_text": "VULNERABLE",
+   "basis": "Log review",
+   "days": 158,
+   "standing": false,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Kestrel Desktop Client (secondary)",
+   "state": "vulnerable",
+   "state_text": "VULNERABLE",
+   "basis": "Vendor confirmation",
+   "days": 7,
+   "standing": false,
+   "areas": [
+    "endpoints"
+   ]
+  },
+  {
+   "item": "Ironwood Identity Gateway (primary)",
+   "state": "confirmed",
+   "state_text": "CONFIRMED",
+   "basis": "Inventory check",
+   "days": 9,
+   "standing": false,
+   "areas": [
+    "identity"
+   ]
+  },
+  {
+   "item": "Granary SSO Broker (legacy)",
+   "state": "confirmed",
+   "state_text": "CONFIRMED",
+   "basis": "Log review",
+   "days": 120,
+   "standing": false,
+   "areas": [
+    "identity",
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Ironwood OT Controller (lab)",
+   "state": "confirmed",
+   "state_text": "CONFIRMED",
+   "basis": "Network sweep",
+   "days": 3,
+   "standing": false,
+   "areas": [
+    "perimeter",
+    "webapps",
+    "research"
+   ]
+  },
+  {
+   "item": "Lantern VPN Appliance (lab)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": null,
+   "standing": false,
+   "areas": [
+    "perimeter",
+    "email"
+   ]
+  },
+  {
+   "item": "Ironwood Network Sensor (secondary)",
+   "state": "conflicted",
+   "state_text": "CONFLICTED",
+   "basis": "Vault note from prior cycle",
+   "days": 31,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Tessera Access Gateway (legacy)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Vault note from prior cycle",
+   "days": 34,
+   "standing": false,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Dovetail Reporting Tool (departmental)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": 2,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Cinder Access Gateway (departmental)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Vendor confirmation",
+   "days": 11,
+   "standing": false,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Dovetail Forms Plugin (secondary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": 3,
+   "standing": false,
+   "areas": [
+    "webapps",
+    "research"
+   ]
+  },
+  {
+   "item": "Ironwood Endpoint Agent (primary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": 34,
+   "standing": false,
+   "areas": [
+    "endpoints",
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Rookery Workstation Image (secondary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "No record found",
+   "days": 30,
+   "standing": false,
+   "areas": [
+    "endpoints"
+   ]
+  },
+  {
+   "item": "Pewter DNS Resolver (legacy)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Vendor confirmation",
+   "days": 124,
+   "standing": false,
+   "areas": [
+    "perimeter",
+    "supply",
+    "ai"
+   ]
+  },
+  {
+   "item": "Vellum Identity Gateway (secondary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Vault note from prior cycle",
+   "days": 24,
+   "standing": false,
+   "areas": [
+    "identity",
+    "email"
+   ]
+  },
+  {
+   "item": "Marrow VPN Appliance (legacy)",
+   "state": "conflicted",
+   "state_text": "CONFLICTED",
+   "basis": "Log review",
+   "days": 22,
+   "standing": false,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Tessera VPN Appliance (departmental)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Network sweep",
+   "days": 21,
+   "standing": false,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Ironwood Inference Node (lab)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Log review",
+   "days": 20,
+   "standing": false,
+   "areas": [
+    "ai"
+   ]
+  },
+  {
+   "item": "Lantern VPN Appliance (lab)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": 20,
+   "standing": false,
+   "areas": [
+    "perimeter",
+    "research"
+   ]
+  },
+  {
+   "item": "Saltmarsh Management Console (primary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Network sweep",
+   "days": 20,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Rookery DNS Resolver (legacy)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Log review",
+   "days": 14,
+   "standing": false,
+   "areas": [
+    "perimeter",
+    "ai"
+   ]
+  },
+  {
+   "item": "Pewter Access Gateway (secondary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": 13,
+   "standing": false,
+   "areas": [
+    "perimeter",
+    "webapps"
+   ]
+  },
+  {
+   "item": "Saltmarsh Print Server (legacy)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": 12,
+   "standing": false,
+   "areas": [
+    "endpoints",
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Saltmarsh Licensing Service (secondary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Vault note from prior cycle",
+   "days": 11,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Umber Credential Vault (lab)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Vendor confirmation",
+   "days": 9,
+   "standing": false,
+   "areas": [
+    "identity",
+    "perimeter",
+    "cloud"
+   ]
+  },
+  {
+   "item": "Marrow Assistant Service (secondary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Network sweep",
+   "days": 7,
+   "standing": false,
+   "areas": [
+    "ai"
+   ]
+  },
+  {
+   "item": "Umber Credential Vault (primary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Log review",
+   "days": 7,
+   "standing": false,
+   "areas": [
+    "identity"
+   ]
+  },
+  {
+   "item": "Dovetail Licensing Service (departmental)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "No record found",
+   "days": 5,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Quill Licensing Service (lab)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "No record found",
+   "days": 5,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Tessera Edge Firewall (primary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Network sweep",
+   "days": 5,
+   "standing": false,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Fathom DNS Resolver (primary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Network sweep",
+   "days": 4,
+   "standing": false,
+   "areas": [
+    "perimeter",
+    "supply"
+   ]
+  },
+  {
+   "item": "Tessera Licensing Service (departmental)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Network sweep",
+   "days": 4,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Wicket Monitoring Agent (lab)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Network sweep",
+   "days": 2,
+   "standing": false,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Rookery Edge Firewall (departmental)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Vendor confirmation",
+   "days": null,
+   "standing": true,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Wicket Print Server (departmental)",
+   "state": "mitigated",
+   "state_text": "MITIGATED",
+   "basis": "Network sweep",
+   "days": 158,
+   "standing": false,
+   "areas": [
+    "endpoints"
+   ]
+  },
+  {
+   "item": "Granary DNS Resolver (primary)",
+   "state": "mitigated",
+   "state_text": "MITIGATED",
+   "basis": "Log review",
+   "days": 120,
+   "standing": false,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Cinder OT Controller (secondary)",
+   "state": "mitigated",
+   "state_text": "MITIGATED",
+   "basis": "Vault note from prior cycle",
+   "days": null,
+   "standing": true,
+   "areas": [
+    "perimeter"
+   ]
+  },
+  {
+   "item": "Alder Assistant Service (secondary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": null,
+   "standing": true,
+   "areas": [
+    "ai"
+   ]
+  },
+  {
+   "item": "Tessera Network Sensor (secondary)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "Inventory check",
+   "days": null,
+   "standing": true,
+   "areas": [
+    "other"
+   ]
+  },
+  {
+   "item": "Marrow OT Controller (lab)",
+   "state": "unverified",
+   "state_text": "UNVERIFIED",
+   "basis": "No record found",
+   "days": null,
+   "standing": true,
+   "areas": [
+    "perimeter"
+   ]
+  }
+ ],
+ "context": {
+  "geopolitical": [
+   {
+    "t": "Regulators issued guidance naming research institutions as a focus area",
+    "d": "Regulators issued guidance naming research institutions as a focus area. (synthetic text.)",
+    "s": "Partner notice"
+   },
+   {
+    "t": "Sector-wide targeting of state universities continues",
+    "d": "Sector-wide targeting of state universities continues; two peer institutions notified this week. (synthetic text.)",
+    "s": "Partner notice"
+   },
+   {
+    "t": "No new sector reporting since the previous brief",
+    "d": "No new sector reporting since the previous brief. (synthetic text.)",
+    "s": "Partner notice"
+   },
+   {
+    "t": "Hacktivist claims against campus networks rose after a policy announcement",
+    "d": "Hacktivist claims against campus networks rose after a policy announcement; most unverified. (synthetic text.)",
+    "s": "Partner notice"
+   }
+  ],
+  "ai_watch": [
+   {
+    "t": "Public prompt-injection payloads released for helpdesk assistants",
+    "d": "Public prompt-injection payloads released for helpdesk assistants; pilot should be tested against them. (synthetic text.)",
+    "s": "Partner notice"
+   }
+  ],
+  "watchlist": [
+   {
+    "t": "Certificate chain expiry approaching",
+    "d": "Certificate chain expiry approaching (synthetic text.)",
+    "s": "Partner notice",
+    "since": "2026-09-15",
+    "trigger": "Inventory reconciliation"
+   },
+   {
+    "t": "Library maintainer handover under watch",
+    "d": "Library maintainer handover under watch (synthetic text.)",
+    "s": "Commercial threat feed",
+    "since": "2026-09-15",
+    "trigger": "Expiry date"
+   },
+   {
+    "t": "Library maintainer handover under watch",
+    "d": "Library maintainer handover under watch (synthetic text.)",
+    "s": "Government advisory",
+    "since": "2026-09-15",
+    "trigger": "Inventory reconciliation"
+   },
+   {
+    "t": "Scheduled decommission of a legacy host",
+    "d": "Scheduled decommission of a legacy host (synthetic text.)",
+    "s": "Partner notice",
+    "since": "2026-09-15",
+    "trigger": "Inventory reconciliation"
+   },
+   {
+    "t": "Library maintainer handover under watch",
+    "d": "Library maintainer handover under watch (synthetic text.)",
+    "s": "Partner notice",
+    "since": "2026-09-15",
+    "trigger": "Any new release"
+   },
+   {
+    "t": "Certificate chain expiry approaching",
+    "d": "Certificate chain expiry approaching (synthetic text.)",
+    "s": "Partner notice",
+    "since": "2026-09-15",
+    "trigger": "Inventory reconciliation"
+   },
+   {
+    "t": "Vendor breach notification pending details",
+    "d": "Vendor breach notification pending details (synthetic text.)",
+    "s": "Commercial threat feed",
+    "since": "2026-09-15",
+    "trigger": "Any new release"
+   }
+  ]
+ },
+ "notes": {
+  "feeds": "Section withheld in the shareable sample.",
+  "ioc": "Section withheld in the shareable sample.",
+  "coverage": "Section withheld in the shareable sample."
+ },
+ "banners": [
+  {
+   "cls": "err",
+   "text": "flash banner: synthetic high-priority notice for this cycle"
+  }
+ ],
+ "threat_level": "CRITICAL",
+ "fm": {
+  "items_scored": "33"
+ },
+ "run": {
+  "at": "2026-09-15 (scheduled task)",
+  "model": "sample pipeline",
+  "schema": "pre-v1",
+  "valid": true,
+  "feeds_fresh": null,
+  "feeds_total": null,
+  "stale": [
+   "one feed stale"
+  ],
+  "chunks": 0,
+  "prior_chunks": 0
+ }
+}

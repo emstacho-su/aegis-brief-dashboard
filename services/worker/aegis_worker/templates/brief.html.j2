@@ -1,0 +1,124 @@
+{#- Static L2 brief page. Autoescape is on: every {{ }} below is escaped unless marked safe. -#}
+{% macro area_chips(keys) %}{% for a in keys %}<span class="achip">{{ area_name(a) }}</span>{% endfor %}{% endmacro %}
+{% macro badge_sev(p) %}<span class="badge sev-{{ p }}">{{ p }}</span>{% endmacro %}
+{% macro tlp_badge(t) %}<span class="tlp tlp-{{ t }}">{{ TLP_LABEL.get(t, 'TLP:?') }}</span>{% endmacro %}
+{% macro pill_status(it) %}{% if it.status == 'new' %}<span class="pill new">New</span>{% else %}<span class="pill">Cont {{ it.continued_days }}d</span>{% endif %}{% endmacro %}
+{% macro circ(s, lg, title) %}<span class="circ{% if lg %} lg{% endif %}" style="--p:{{ s }}" role="img" aria-label="Score {{ s }} of 100" title="{{ title }}"><b aria-hidden="true">{{ s }}</b></span>{% endmacro %}
+{% macro idn(it) %}{% if it.identifiers %}<div class="idn">{{ it.identifiers | join(' · ') }}</div>{% endif %}{% endmacro %}
+{% macro item_body(it) %}
+<div class="xb">
+<p class="desc">{{ it.description }}</p>
+{% if it.su_impact %}<div class="box"><div class="bl">SU impact</div><p>{{ it.su_impact }}</p></div>{% endif %}
+{% if it.recommended_actions %}<div class="box"><div class="bl">Recommended actions</div><ol>{% for a in it.recommended_actions %}<li>{{ a }}</li>{% endfor %}</ol></div>{% endif %}
+{% if it.delta %}<div class="box"><div class="bl">Delta</div><p>{{ it.delta }}</p></div>{% endif %}
+{% if it.escalation.required %}<div class="box esc"><div class="bl">Escalation</div><p><b>To:</b> {{ it.escalation.to }}{% if it.escalation.note %} · {{ it.escalation.note }}{% endif %}</p></div>{% endif %}
+{% if it.indicators %}<div class="box"><div class="bl">Indicators ({{ it.indicators | length }}, defanged, never links)</div><div class="tw"><table class="ind"><thead><tr><th>Type</th><th>Value</th></tr></thead><tbody>{% for t, v in it.indicators %}<tr><td class="mono sec2">{{ t }}</td><td class="mono v">{{ v | defang }}</td></tr>{% endfor %}</tbody></table></div></div>{% endif %}
+</div>
+{% endmacro %}
+{% macro item_footer(it) %}
+{% set url = safe_url(it.source.url) %}
+<div class="xf">{% if it.escalation.required %}<span class="pill esc">Esc</span><span class="dot"></span>{% endif %}{{ tlp_badge(it.tlp) }}<span class="dot"></span><span>Source: {% if url %}<a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ it.source.name }}</a>{% else %}{{ it.source.name }}{% endif %}</span>{% if it.source.retrieved %}<span class="dot"></span><span>{{ it.source.retrieved }}</span>{% endif %}<span class="dot"></span><span class="kind">{{ it.kind }}</span></div>
+{% endmacro %}
+{% macro expanded(row) %}
+{% set it = row.item %}
+<article class="item t{{ it.tier }}" id="item-{{ it.item_id }}">{% if it.status == 'new' %}<span class="tab new">New</span>{% else %}<span class="tab">Cont {{ it.continued_days }}d</span>{% endif %}<div class="xc">
+<div class="xh"><div class="tb"><div class="ttl">{{ it.title }}</div>{{ idn(it) }}<div class="ar">{{ area_chips(it.areas) }}</div></div><div class="sc">{{ circ(it.score, true, row.score_title) }}<span class="pr {{ it.priority }}">{{ it.priority }}</span></div></div>
+{{ item_body(it) }}
+{{ item_footer(it) }}
+</div></article>
+{% endmacro %}
+{% macro collapsed(row) %}
+{% set it = row.item %}
+<details class="item t{{ it.tier }}" id="item-{{ it.item_id }}">
+<summary class="hd">{{ badge_sev(it.priority) }}<div class="tb"><div class="ttl">{{ it.title }}</div>{{ idn(it) }}</div><div class="rs"><span class="l">{% if it.escalation.required %}<span class="pill esc">Esc</span>{% endif %}{{ pill_status(it) }}</span>{% if it.tlp != 'clear' %}{{ tlp_badge(it.tlp) }}{% endif %}</div>{{ circ(it.score, false, row.score_title) }}<span class="chev" aria-hidden="true">▾</span></summary>
+<div class="xc">
+<div class="ar">{{ area_chips(it.areas) }}</div>
+{{ item_body(it) }}
+{{ item_footer(it) }}
+</div>
+</details>
+{% endmacro %}
+{% macro tile(k, v, delta=none, cls='') %}<div class="tile{% if cls %} {{ cls }}{% endif %}"><div class="k">{{ k }}</div><div class="v num">{{ v }}{% if delta is not none %}<span class="d{% if delta > 0 %} up{% elif delta < 0 %} down{% endif %}">{% if delta > 0 %}▲{% elif delta < 0 %}▼{% else %}={% endif %} {{ delta | abs }}</span>{% endif %}</div></div>{% endmacro %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>AEGIS Daily Brief · {{ b.date }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+{{ css }}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+<div class="brand">SU InfoSec<span class="pipe">|</span>AEGIS Daily Brief</div>
+<div class="hdr-right"><span class="ribbon">Brief {{ b.date }}</span></div>
+</header>
+<main class="wrap" id="main">
+<div class="ph"><div><h1>Daily brief · <span class="mono">{{ b.date }}</span>{% if is_today %} <span class="pill new">Today</span>{% endif %}</h1><span class="sub">{{ b.items | length }} items · baseline {{ b.baseline_date or 'none' }}{% if b.threat_level %} · threat level <span class="pr {{ threat_cls(b.threat_level) }}">{{ b.threat_level }}</span>{% endif %}</span></div>
+<div class="navd"><span>previous {{ prev_date or 'none' }}</span><span>next {{ next_date or 'none' }}</span><span>archive {{ archive_days }} briefs</span></div></div>
+{% if not run.valid %}
+<div class="banner-err">This brief failed schema validation. Content below may be incomplete.</div>
+{% endif %}
+{% for x in b.banners %}
+<div class="banner-err{% if x.cls == 'warn' %} warnb{% endif %}">{{ x.text }}</div>
+{% endfor %}
+<div class="counts">{{ tile('Items', tiles['items'], tiles['items_delta']) }}{{ tile('Tier 1', tiles['t1'], tiles['t1_delta'], 't1') }}{{ tile('Tier 2', tiles['t2']) }}{{ tile('Tier 3', tiles['t3']) }}{{ tile('New', tiles['new']) }}{{ tile('Escalations', tiles['esc'], none, 'esc') }}{{ tile('Confirmed vulnerable', tiles['vulnerable']) }}{% if b.threat_level %}<div class="tile"><div class="k">Threat level</div><div class="v num"><span class="pr lvl {{ threat_cls(b.threat_level) }}">{{ b.threat_level }}</span></div></div>{% endif %}<div class="tile"><div class="k">Avg item age</div><div class="v num">{{ tiles['avg_age'] }}<span class="u">d</span></div></div></div>
+<div class="two"><div style="min-width:0">
+<div class="sec-h"><h2>All items<span class="cnt">({{ b.items | length }})</span><span class="sub">ranked by score · Tier 1 expanded, others open on click</span></h2></div>
+<div class="stack">
+{% for row in rows %}
+{% if 'band' in row %}
+<div class="band{% if row.band == 1 %} t1{% endif %}">Tier {{ row.band }} · {{ TIER_NAME.get(row.band, '') }}{% if row.out_of_order %} · <span style="color:var(--degraded)">out of score order</span>{% endif %}</div>
+{% elif row.item.tier == 1 %}
+{{ expanded(row) }}
+{% else %}
+{{ collapsed(row) }}
+{% endif %}
+{% else %}
+<div class="empty">No items in this brief.</div>
+{% endfor %}
+</div>
+</div>
+<aside class="rail">
+<section class="sec"><div class="sec-h"><h2>Exposure register<span class="cnt">({{ exposure | length }})</span><span class="sub">{{ exposure | selectattr('state', 'equalto', 'vulnerable') | list | length }} vulnerable</span></h2></div>
+{% if exposure %}
+<div class="tw"><table><thead><tr><th>State</th><th>Item</th><th>Basis</th><th>Unchanged</th></tr></thead><tbody>
+{% for r in exposure %}
+<tr><td><span class="badge {{ STATE_CLS.get(r.state, 'sev-unknown') }}" title="{{ r.state_text }}">{{ r.state }}</span></td><td>{{ r.item }}<div class="mono muted" style="font-size:10px">{{ area_chips(r.areas) }}</div></td><td class="sec2" style="font-size:12px">{{ r.basis }}</td><td class="age num{% if r.days is not none and r.days >= 14 %} old{% endif %}">{% if r.standing %}standing{% elif r.days is not none %}{{ r.days }}d{% endif %}</td></tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}
+<div class="empty">No exposure register in this brief.</div>
+{% endif %}
+</section>
+<section class="sec"><div class="sec-h"><h2>Context</h2></div><div class="stack">
+{% for title, arr, watch in context_cards %}
+{% if arr %}
+<div class="card"><h3>{{ title }}</h3><ul class="ctx">
+{% for x in arr %}
+<li><details><summary><span class="tx">{{ x.t }}</span><span class="cv" aria-hidden="true">▾</span></summary><p class="more">{{ x.d }}</p></details><div class="s">{% if watch %}since {{ x.since }} · trigger: {{ x.trigger }}{% else %}{{ x.s }}{% endif %}</div></li>
+{% endfor %}
+</ul></div>
+{% else %}
+<div class="card absent"><h3>{{ title }}</h3><div class="s">Not included in this brief</div></div>
+{% endif %}
+{% endfor %}
+</div></section>
+{% if notes %}
+<section class="sec"><div class="sec-h"><h2>Brief sections<span class="sub">as written</span></h2></div><div class="stack">
+{% for label, text in notes %}
+<details class="card"><summary>{{ label }}</summary><pre class="mono notepre">{{ text }}</pre></details>
+{% endfor %}
+</div></section>
+{% endif %}
+</aside></div>
+<div class="health"><span>run {{ run.at }}</span><span>model {{ run.model }}</span><span>schema {{ run.schema_ }} {% if run.valid %}✓{% else %}<span class="bad">✗</span>{% endif %}</span><span{% if run.stale %} class="bad"{% endif %}>{% if run.feeds_total is none %}feeds n/a{% else %}feeds {{ run.feeds_fresh if run.feeds_fresh is not none else '?' }}/{{ run.feeds_total }} fresh{% endif %}{% if run.stale %} (stale: {{ run.stale | join(', ') }}){% endif %}</span><span>retrieval {{ run.chunks }} chunks, {{ run.prior_chunks }} from prior briefs</span><span>archive {{ archive_days }} days</span></div>
+</main>
+<footer>Syracuse University <span class="accent">Information Security</span></footer>
+</body>
+</html>

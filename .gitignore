@@ -1,0 +1,40 @@
+# Secrets and generated config
+.env
+.env.*
+!.env.example
+apps/web/config.js
+
+# Local data
+volume/
+data/inbox/
+data/private/
+*.tgz
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Tooling
+.vercel/
+supabase/.temp/
+supabase/.branches/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,42 @@
+{
+ "identity": {
+  "name": "Identity & Access",
+  "desc": "SSO, MFA, directory, credentials"
+ },
+ "endpoints": {
+  "name": "Endpoints & Devices",
+  "desc": "Managed workstations, printers, mobile"
+ },
+ "perimeter": {
+  "name": "Network & Perimeter",
+  "desc": "VPN, firewalls, DNS, edge appliances"
+ },
+ "email": {
+  "name": "Email & Collaboration",
+  "desc": "Mail, phishing, messaging, document sharing"
+ },
+ "webapps": {
+  "name": "Web Apps & LMS",
+  "desc": "LMS, portals, CMS, student-facing apps"
+ },
+ "cloud": {
+  "name": "Cloud & SaaS",
+  "desc": "Tenant consoles, vendor SaaS, OAuth"
+ },
+ "supply": {
+  "name": "Software Supply Chain",
+  "desc": "Registries, CI, open-source dependencies"
+ },
+ "research": {
+  "name": "Research & Data",
+  "desc": "HPC, grants, research data"
+ },
+ "ai": {
+  "name": "AI Systems",
+  "desc": "Assistants, model providers, agents"
+ },
+ "other": {
+  "name": "Other / unmapped",
+  "desc": "Items the mapper could not place in an area"
+ }
+}

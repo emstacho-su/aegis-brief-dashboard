@@ -1,0 +1,98 @@
+# AEGIS brief dashboard: one container (worker + API + page) and one volume.
+#
+#   docker compose up -d --build              # build, seed on first start, serve on :8080
+#   docker compose ps                         # health shows (healthy) once /health answers
+#   docker compose --profile replay run --rm replay   # ingest the next unseen brief
+#
+# Values come from .env in this directory (copy .env.example). Compose reads
+# .env for ${VAR} interpolation and the env_file line passes it to the
+# container. Anything unset falls back to the defaults written below.
+
+name: aegis-brief-dashboard
+
+# Shared by both services so they see the same volume and settings.
+x-worker-env: &worker-env
+  # Where the worker keeps briefs, renders, the index and the manifest.
+  # Fixed: it must match the volume mount below. Do not override in .env.
+  VOLUME_ROOT: /var/lib/aegis/volume
+  # Port the server listens on inside the container. Change the host side
+  # with HOST_PORT instead.
+  PORT: "8080"
+  # Retention. Keep the N most recent brief dates; older ones are pruned
+  # after every ingest.
+  MAX_BRIEFS: ${MAX_BRIEFS:-30}
+  # Mirror every ingest to Supabase (briefs row, rendered HTML, archive_index).
+  # Needs SUPABASE_URL and SUPABASE_SERVICE_KEY.
+  SYNC_TO_SUPABASE: ${SYNC_TO_SUPABASE:-0}
+
+x-worker-image: &worker-image
+  # Versioned tags only. Set IMAGE_TAG to the git SHA, for example
+  #   IMAGE_TAG=$(git rev-parse --short=12 HEAD) docker compose build
+  # "local" is the fallback for a dev build. Never use :latest.
+  image: aegis-brief-dashboard:${IMAGE_TAG:-local}
+  build:
+    context: .
+    dockerfile: services/worker/Dockerfile
+
+services:
+  dashboard:
+    <<: *worker-image
+    # Supabase keys and REQUIRE_AUTH are passed only if present in .env.
+    # Unset means "Supabase not configured", and REQUIRE_AUTH then defaults
+    # to 0 in the worker. With Supabase configured it defaults to 1.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *worker-env
+      # POST /api/ingest. 1 = on. The endpoint has no auth of its own, so
+      # turn it off (0) if this port is reachable by anyone you do not trust.
+      INGEST_ENABLED: ${INGEST_ENABLED:-1}
+      # On first start with an empty volume, the image ingests every brief
+      # in this directory (the 22 fictional samples baked into the image).
+      # Set SEED_DIR to an empty value in .env to start with an empty volume.
+      SEED_DIR: ${SEED_DIR-/app/data/briefs}
+    ports:
+      # BIND_ADDR=127.0.0.1 keeps the dashboard on this machine only.
+      # The default 0.0.0.0 exposes it to the local network.
+      - "${BIND_ADDR:-0.0.0.0}:${HOST_PORT:-8080}:8080"
+    volumes:
+      - aegis_volume:/var/lib/aegis/volume
+    healthcheck:
+      # Python is always in the image; curl may not be.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  # One-shot: ingest the next brief from REPLAY_SOURCE that the volume has
+  # not seen yet, then exit. Run it once per simulated day. The running
+  # dashboard picks the new brief up from the shared volume.
+  replay:
+    <<: *worker-image
+    profiles: [replay]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *worker-env
+      # Never seed in the one-shot container; replay decides what to ingest.
+      SEED_DIR: ""
+    command: ["aegis-worker", "replay", "/app/data/briefs", "--step"]
+    volumes:
+      - aegis_volume:/var/lib/aegis/volume
+      # Host directory to replay from. Defaults to the samples. Point it at
+      # data/inbox to ingest briefs made with scripts/new_brief.py.
+      - ${REPLAY_SOURCE:-./data/briefs}:/app/data/briefs:ro
+    restart: "no"
+
+volumes:
+  aegis_volume:
+    # Fixed name (no project prefix) so backup commands in docs/RUNBOOK.md work.
+    name: aegis_volume
