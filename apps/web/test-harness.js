@@ -542,6 +542,80 @@ function fakeSupabase(db) {
   }
   /* --- end regressions: shell --- */
 
+  /* --- regressions: trends --- */
+  {
+    const kpi = (html, label) => { const m = html.match(new RegExp('>' + label + '</span><div class="v"><span class="n">([0-9,.]+)<')); return m ? Number(m[1].replace(/,/g, '')) : null; };
+    const selectTag = (html, key) => (html.match(new RegExp('<select[^>]*data-f="' + key + '"[^>]*>')) || [''])[0];
+    const sweep = async (label, cfg) => {
+      const env = await start(cfg);
+      const ids = env.run('REPORTS.map(r=>r.id)');
+      [7, 14, 30].forEach(p => ids.forEach(id => {
+        env.ctx.location.hash = '#trends-' + id;
+        try { env.run(`state.f.period=${p};state.sel=null;state.f.tarea=null;render()`); } catch (e) { ok(false, `${label} ${id}/${p} threw: ${e.message}`); return; }
+        ok(!/NaN|undefined/.test(env.main().innerHTML), `${label} ${id} at ${p}: NaN or undefined in the rendered report`);
+      }));
+      ['#home', '#brief'].concat(env.run('Object.keys(AREAS)').map(k => '#area-' + k)).forEach(h => {
+        env.ctx.location.hash = h; env.run('render()');
+        ok(!/NaN/.test(env.main().innerHTML), `${label} ${h}: NaN in the rendered page`);
+      });
+      ok(env.errors.length === 0, `${label} trends console.error: ${env.errors.slice(0, 3).join(' | ')}`);
+      return env;
+    };
+    const bigEnv = await sweep('trends/container', { config: { apiBase: '', mode: 'container' }, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify(briefs)), manifest: { retained: Object.keys(briefs) } }) }) });
+    const firstKey = Object.keys(briefs)[0];
+    await sweep('trends/single', { config: { apiBase: '' }, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify({ [firstKey]: briefs[firstKey] })) }) }) });
+
+    const env = bigEnv;
+    /* catalog "New items" tile and the New vs dropped report share one definition */
+    [7, 14, 30].forEach(p => {
+      env.ctx.location.hash = '#trends'; env.run(`state.f.period=${p};state.sel=null;state.f.tarea=null;render()`);
+      const cat = kpi(env.main().innerHTML, 'New items');
+      env.ctx.location.hash = '#trends-newres'; env.run('render()');
+      const rep = kpi(env.main().innerHTML, 'New items');
+      ok(cat !== null && cat === rep, `catalog New items (${cat}) differs from the New vs dropped report (${rep}) at period ${p}`);
+    });
+    env.ctx.location.hash = '#trends'; env.run('state.f.period=7;render()');
+    ok(/first appearances/.test(env.main().innerHTML), 'catalog New items tile does not say it counts first appearances');
+    /* source contribution: the bar value equals the selection count at period 7 */
+    env.ctx.location.hash = '#trends-sources'; env.run('state.f.period=7;state.f.tarea=null;state.sel=null;render()');
+    const top = env.run('(()=>{const m={};lifeIn(periodDays()).forEach(L=>L.sources.forEach(s=>m[s]=(m[s]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]})()');
+    env.run(`state.sel=${JSON.stringify(top[0])};render()`);
+    const mm = env.main().innerHTML.match(/(\d+) matching items?/);
+    ok(mm && Number(mm[1]) === top[1], `source selection lists ${mm && mm[1]} items but the bar says ${top[1]} at period 7`);
+    /* Items by area uses short labels */
+    env.ctx.location.hash = '#trends-byarea'; env.run('state.sel=null;state.f.period=30;render()');
+    const labels = [...env.main().innerHTML.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(m => m[1]);
+    ['Identity', 'Endpoints', 'Network', 'Email', 'Web/LMS', 'Cloud', 'Supply', 'Research', 'AI'].forEach(n => ok(labels.includes(n), `byarea axis lacks short label ${n}`));
+    ok(!labels.some(l => /&amp;|Chain|Systems/.test(l)), 'byarea axis still prints full area names');
+    /* controls that a report ignores are disabled with an explanation */
+    const ignoring = { movers: ['period'], actionsage: ['period'], quiet: ['period', 'tarea'], byarea: ['tarea'] };
+    Object.entries(ignoring).forEach(([id, keys]) => {
+      env.ctx.location.hash = '#trends-' + id; env.run('state.sel=null;render()');
+      keys.forEach(k => { const t = selectTag(env.main().innerHTML, k); ok(t === '' || (/disabled/.test(t) && /title="/.test(t)), `${id}: ${k} select is enabled although the report ignores it`); });
+    });
+    env.ctx.location.hash = '#trends-newres'; env.run('render()');
+    ok(!/disabled/.test(selectTag(env.main().innerHTML, 'period')) && selectTag(env.main().innerHTML, 'tarea') !== '', 'newres lost its Period/Area controls');
+    /* movers with an area that has no items today shows an explicit empty state */
+    env.ctx.location.hash = '#trends-movers';
+    env.run("state.f.tarea=Object.keys(AREAS).find(k=>!BRIEFS[TODAY_S].items.some(i=>i.areas.includes(k)))||null;render()");
+    if (env.run('state.f.tarea')) ok(/nothing to rank/.test(env.main().innerHTML), 'movers has no empty state for an area without items');
+    /* the Trends area filter does not leak into the brief */
+    env.run('state.f.tarea=null'); env.ctx.location.hash = '#brief'; env.run('render()');
+    const base = env.main().innerHTML.match(/All items<span class="cnt">\((\d+)\)/);
+    env.run("state.f.tarea='perimeter'"); env.run('render()');
+    const after = env.main().innerHTML.match(/All items<span class="cnt">\((\d+)\)/);
+    ok(base && after && base[1] === after[1], `Trends area filter changed the brief item count (${base && base[1]} -> ${after && after[1]})`);
+    env.ctx.location.hash = '#trends-newres'; env.run('state.f.tarea=null;render()'); const allN = kpi(env.main().innerHTML, 'New items');
+    env.run("state.f.tarea='perimeter';render()");
+    ok(kpi(env.main().innerHTML, 'New items') !== allN, 'Trends area filter had no effect on the New vs dropped report');
+    env.run('state.f.tarea=null');
+    /* quiet tooltip wording */
+    env.ctx.location.hash = '#trends-quiet'; env.run('state.sel=null;render()');
+    ok(/days since Tier 1/.test(env.main().innerHTML), 'quiet tooltip does not say "days since Tier 1"');
+    console.log('6. trends          every report x 7/14/30 NaN-free in container and single-brief data, counts agree, short labels, controls, filter isolation');
+  }
+  /* --- end regressions: trends --- */
+
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
