@@ -108,7 +108,7 @@ function renderAll(env, label) {
 
 /* ---- fake supabase-js (records calls) ---- */
 function fakeSupabase(db) {
-  const log = { otp: [], verify: [], queries: [], uploads: [], signOut: 0 };
+  const log = { otp: [], verify: [], pw: [], update: [], queries: [], uploads: [], signOut: 0 };
   let cb = null, session = db.session || null;
   const qb = table => {
     const st = { table, ops: [] };
@@ -125,6 +125,8 @@ function fakeSupabase(db) {
       getSession: async () => ({ data: { session }, error: null }),
       onAuthStateChange(fn) { cb = fn; return { data: { subscription: { unsubscribe() {} } } }; },
       signInWithOtp: async a => { log.otp.push(a); return { error: null }; },
+      signInWithPassword: async a => { log.pw.push(a); if (a.password !== 'correct horse battery') return { error: new Error('Invalid login credentials') }; session = { access_token: 'tokpw', user: { id: db.pwUid || 'pw-user', email: a.email } }; cb && cb('SIGNED_IN', session); return { data: { session }, error: null }; },
+      updateUser: async a => { log.update.push(a); return { data: {}, error: null }; },
       verifyOtp: async a => { log.verify.push(a); if (a.token !== '123456') return { error: new Error('Token has expired or is invalid') }; return { data: {}, error: null }; },
       signOut: async () => { log.signOut++; session = null; cb && cb('SIGNED_OUT', null); return { error: null }; },
     },
@@ -172,7 +174,7 @@ function fakeSupabase(db) {
     ok(env.run('BOOTED'), 'container (index) did not boot');
     ok(env.run('IDX.daily[0].__adopted===true'), 'server index was not adopted');
     const ribbon = env.els.get('ribbon').textContent;
-    ok(ribbon === `v1.4.0 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
+    ok(ribbon === `v1.5.0 · ${nBriefs} briefs · container`, 'ribbon is ' + ribbon);
     const c = renderAll(env, 'container/index');
     env.ctx.location.hash = '#archive'; env.run('render()');
     const arch = env.main().innerHTML;
@@ -215,14 +217,22 @@ function fakeSupabase(db) {
       const op = st.ops.map(o => o[0]);
       if (st.table === 'briefs') return { data: Object.keys(briefs).map(d => ({ date: d, data: JSON.parse(JSON.stringify(briefs[d])) })), error: null };
       if (st.table === 'archive_index') return { data: { data: JSON.parse(JSON.stringify(computedIndex)) }, error: null };
-      if (st.table === 'user_settings' && op.includes('select')) { const who = (st.ops.find(o => o[0] === 'eq') || [])[2]; return who === uid ? { data: { my_areas: ['perimeter'], stars: ['x1'], viewed: [], theme: 'light' }, error: null } : { data: null, error: null }; }
+      if (st.table === 'user_settings' && op.includes('select')) { const who = (st.ops.find(o => o[0] === 'eq') || [])[2]; return who === uid ? { data: { my_areas: ['perimeter'], stars: ['x1'], viewed: [], theme: 'light', pw_set: true }, error: null } : { data: null, error: null }; }
       return { data: null, error: null };
     } });
     const env = await start({ config: { apiBase: '', supabaseUrl: 'https://p.supabase.co', supabaseAnonKey: 'anon', requireAuth: true, mode: 'static' }, supabase: fake.lib });
     await sleep(60);
     const m0 = env.main().innerHTML;
-    ok(/id="signinForm"/.test(m0) && /<label for="signinEmail">/.test(m0) && env.ctx.__focused === 'signinEmail', 'sign-in screen or focus missing');
+    ok(/id="signinForm"/.test(m0) && /<label for="signinEmail">/.test(m0) && /id="signinPw"/.test(m0) && /data-signin-mode="code"/.test(m0) && env.ctx.__focused === 'signinEmail', 'password sign-in screen or focus missing');
     ok(/Sign in required/.test(env.els.get('live').textContent), 'sign-in not announced');
+    const gid = id => env.ctx.document.getElementById(id);
+    /* wrong password is reported and does not sign in */
+    gid('signinEmail').value = 'Analyst@syr.edu'; gid('signinPw').value = 'wrong';
+    await env.run('signInWithPassword()');
+    ok(fake.log.pw.length === 1 && /did not match/.test(env.els.get('signinStatus').textContent) && !env.run('SESSION'), 'wrong password handling');
+    /* switch to the code path */
+    env.run("showSignIn('code')");
+    ok(/data-mode="code"/.test(env.main().innerHTML) && !/id="signinPw"/.test(env.main().innerHTML), 'code mode card missing');
     env.els.get('signinEmail').value = 'Analyst@syr.edu';
     await env.run('sendMagicLink()');
     const otp = fake.log.otp[0] || {};
@@ -243,7 +253,7 @@ function fakeSupabase(db) {
     fake.signIn({ access_token: 'tok', user: { id: uid, email: 'analyst@syr.edu' } });
     await sleep(80); await env.run('booting||Promise.resolve()'); await sleep(40);
     ok(env.run('BOOTED') && env.run('MODE') === 'static', 'static mode did not boot after sign-in');
-    ok(env.els.get('ribbon').textContent === `v1.4.0 · ${nBriefs} briefs · static`, 'static ribbon');
+    ok(env.els.get('ribbon').textContent === `v1.5.0 · ${nBriefs} briefs · static`, 'static ribbon');
     ok(env.els.get('avatarBtn').textContent === 'A' && /analyst@syr\.edu/.test(env.els.get('avatarBtn').getAttribute('aria-label')), 'avatar not updated');
     ok(env.run("myAreas.has('perimeter')&&stars.has('x1')") && env.ctx.document.documentElement.getAttribute('data-theme') === 'light', 'remote settings not applied');
     const c = renderAll(env, 'static');
@@ -259,7 +269,6 @@ function fakeSupabase(db) {
     const row = ups[ups.length - 1].ops[0][1];
     ok(row.user_id === uid && row.stars.includes('x3') && row.theme === 'dark' && Array.isArray(row.my_areas) && ups[ups.length - 1].ops[0][2].onConflict === 'user_id', 'upsert row ' + JSON.stringify(row));
     /* feedback */
-    const gid = id => env.ctx.document.getElementById(id);
     gid('fb1').value = 'bug text'; gid('fb2').value = 'change text';
     env.run("fb.shot='data:image/jpeg;base64,'+'/9j/4AAQSkZJRg=='");
     env.run('fbSave()'); await sleep(60);
@@ -281,6 +290,23 @@ function fakeSupabase(db) {
     const seed = ups2.length > upsBefore2 ? ups2[ups2.length - 1].ops[0][1] : null;
     ok(env.run("stars.size===0&&myAreas.size===0&&fb.list.length===0"), 'second user inherited first user state');
     ok(!seed || (seed.user_id === uid2 && seed.stars.length === 0 && seed.my_areas.length === 0), 'second user seeded from first user cache: ' + JSON.stringify(seed));
+    /* no pw_set row: the app is blocked behind the set-password card */
+    ok(env.run('BOOTED') && !env.run('PW_SET') && /id="pwForm"/.test(env.main().innerHTML) && env.ctx.__focused === 'pw1', 'set-password gate not shown for a first-time user');
+    gid('pw1').value = 'short'; gid('pw2').value = 'short';
+    await env.run('savePassword()');
+    ok(/at least 12/.test(gid('pwStatus').textContent) && fake.log.update.length === 0, 'short password accepted');
+    gid('pw1').value = 'correct horse battery'; gid('pw2').value = 'correct horse batteries';
+    await env.run('savePassword()');
+    ok(/do not match/.test(gid('pwStatus').textContent) && fake.log.update.length === 0, 'mismatch accepted');
+    gid('pw2').value = 'correct horse battery';
+    await env.run('savePassword()'); await sleep(40);
+    const pwUp = fake.log.queries.filter(q => q.table === 'user_settings' && q.ops[0][0] === 'upsert' && q.ops[0][1].pw_set === true);
+    ok(fake.log.update.length === 1 && fake.log.update[0].password === 'correct horse battery' && pwUp.length === 1 && pwUp[0].ops[0][1].user_id === uid2, 'password not saved: ' + JSON.stringify(fake.log.update));
+    ok(env.run('PW_SET') && !/id="pwForm"/.test(env.main().innerHTML) && /class="crumb"|sec-h/.test(env.main().innerHTML), 'app did not render after setting the password');
+    /* change password from the menu is the non-forced card */
+    env.run('showSetPassword(false)');
+    ok(/Change your password/.test(env.main().innerHTML) && /data-pw-cancel/.test(env.main().innerHTML), 'change-password card missing');
+    env.run('PW_FORCE=false;renderSide();render()');
     await env.run('signOut()'); await sleep(40);
     console.log(`4. static+auth     sign-in screen (focus=email), OTP sent (shouldCreateUser=false), session -> loaded ${env.run('DATES.length')} briefs from table briefs + archive_index, settings pulled and upserted once (300ms debounce), feedback uploaded to ${up.path.replace(uid, '<uid>')} and inserted, sign out -> sign-in; views=${c.views} popouts=${c.popouts}`);
     console.log('   supabase calls: ' + [...new Set(fake.log.queries.map(q => q.table + ':' + q.ops.map(o => o[0]).join('.')))].join(', '));

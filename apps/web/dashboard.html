@@ -494,7 +494,7 @@ footer .accent{color:var(--accent)}
   <div style="display:flex;align-items:center;gap:.5rem;min-width:0"><button class="menubtn" id="menubtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side">☰</button><div class="brand">SU InfoSec<span class="pipe">|</span>AEGIS Daily Brief</div></div>
   <div class="hdr-right">
     <div class="search"><input id="q" type="search" placeholder="Search items, CVEs" autocomplete="off" aria-label="Search items"><div class="sres" id="sres" hidden></div></div>
-    <span class="ribbon" id="ribbon">v1.4.0</span>
+    <span class="ribbon" id="ribbon">v1.5.0</span>
     <button class="plus" id="fbBtn" title="Report a bug or request a change" aria-label="Report a bug or request a change"><span aria-hidden="true">+</span></button>
     <button class="avatar" id="avatarBtn" aria-expanded="false" aria-haspopup="menu" aria-label="Account menu" title="Account">A</button>
     <div class="umenu" id="umenu" hidden role="menu"></div>
@@ -643,6 +643,7 @@ function buildArchive(){
 let HAS_REAL=false, META={}, BRIEFS={}, DATES=[], TODAY=-1, TODAY_S='', IDX=null;
 let MODE='sample', CFG=null, BOOTED=false;            /* MODE: container | static | sample | local */
 let SB=null, SESSION=null, AUTH_ERR='', SIGNIN=false, applyingRemote=false, syncTimer=null, lastEmail='';
+let PW_SET=true, PW_FORCE=false;   /* PW_SET: this user has set their own password (user_settings.pw_set); false forces the set-password card */
 function setArchive(briefs,o={}){
   HAS_REAL=!!o.real;META=o.meta||{};BRIEFS=briefs||{};
   DATES=Object.keys(BRIEFS).sort();TODAY=DATES.length-1;TODAY_S=DATES[TODAY];
@@ -1122,7 +1123,7 @@ rank 2  chunk c_1a07  doc d_feeds/${esc(it.source.name.toLowerCase().replace(/\s
 /* =========================================================================
    7. Notes, mount, events
    ========================================================================= */
-function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.4.0 · ${DATES.length} briefs · ${MODE}`:'v1.4.0'}
+function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.5.0 · ${DATES.length} briefs · ${MODE}`:'v1.5.0'}
 state.coll=new Set(store.get('coll',[]));state.side=new Set();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
 const I={
  home:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -1160,7 +1161,7 @@ function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.
   const who=em?`<div class="who"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(em)}</b><span>signed in · settings follow your account</span></div>`
     :SB?`<div class="who"><b>Analyst</b><span>not signed in · settings stay in this browser</span></div>`
     :`<div class="who"><b>Analyst</b><span>sign-in or device detection to come</span></div>`;
-  const last=em?`<button id="signOutBtn">Sign out</button>`:SB?`<button id="menuSignInBtn">Sign in<span class="c">magic link</span></button>`:`<button class="dis" disabled>Sign out<span class="c">later</span></button>`;
+  const last=em?`<button id="menuPwBtn">Change password</button><button id="signOutBtn">Sign out</button>`:SB?`<button id="menuSignInBtn">Sign in</button>`:`<button class="dis" disabled>Sign out<span class="c">later</span></button>`;
   m.innerHTML=`${who}
     <a href="#home" data-tabgo="mine">My areas<span class="c">${myAreas.size}</span></a><a href="#home" data-tabgo="starred">Starred<span class="c">${stars.size}</span></a><a href="#home" data-tabgo="viewed">Recently viewed<span class="c">${viewed.length}</span></a>
     <div class="sep"></div><div style="padding:.4rem .9rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:13px"><span>Theme</span><span class="seg" role="group" aria-label="Theme">${['dark','light','system'].map(v=>`<button data-theme-set="${v}" aria-pressed="${curTheme()===v}" style="padding:.15rem .5rem;font-size:11px">${v}</button>`).join('')}</span></div>
@@ -1203,6 +1204,7 @@ function renderSearch(){const q=document.getElementById('q');const box=document.
   const r=searchItems(q.value);box.hidden=false;box.innerHTML=r.length?r.map(L=>`<div class="r" data-open="${esc(L.id)}"><span class="t">${esc(L.title)}</span><span class="m">${L.identifiers[0]?esc(L.identifiers[0])+' · ':''}${L.last_seen===TODAY_S?'today':esc(L.last_seen)}${L.maxTier===1?' · T1':''}</span></div>`).join(''):'<div class="none">No items match.</div>'}
 function render(){
   if(!BOOTED)return; /* the loader (boot) owns #main until data is in */
+  if(needAuth()&&SESSION&&!PW_SET){showSetPassword(true);return}
   try{renderInner();fitTwo()}catch(e){
     if(typeof console!=='undefined')console.error('AEGIS render failed',e);
     const main=document.getElementById('main');if(main)main.innerHTML=`<div class="banner-err" role="alert">This view failed to render (${esc(e&&e.message||e)}). <a href="#home">Back to Your work</a></div>`;
@@ -1241,8 +1243,12 @@ document.addEventListener('click',e=>{
   /* v1.3 loader, auth and feedback-status controls (work before the first render too) */
   if(t.closest('[data-retry]')){boot();return}
   if(t.closest('[data-signin-cancel]')){SIGNIN=false;render();return}
-  if(t.closest('[data-signin-back]')){AUTH_ERR='';showSignIn();return}
-  if(t.closest('[data-signin-resend]')){showSignIn();sendMagicLink();return}
+  const sm=t.closest('[data-signin-mode]');if(sm){e.preventDefault();AUTH_ERR='';showSignIn(sm.dataset.signinMode);return}
+  if(t.closest('[data-signin-back]')){AUTH_ERR='';showSignIn('code');return}
+  if(t.closest('[data-signin-resend]')){showSignIn('code');sendMagicLink();return}
+  if(t.closest('#pwSignOut')){signOut();return}
+  if(t.closest('[data-pw-cancel]')){PW_FORCE=false;renderSide();render();return}
+  if(t.closest('#menuPwBtn')){state.umenu=false;renderUmenu();showSetPassword(false);return}
   if(t.closest('#signOutBtn')){signOut();return}
   if(t.closest('#menuSignInBtn')){state.umenu=false;renderUmenu();showSignIn();return}
   if(t.closest('[data-toastx]')){fb.toast=null;fbRender();return}
@@ -1314,7 +1320,7 @@ document.addEventListener('focusout',e=>{const mk=e.target.closest&&e.target.clo
 document.addEventListener('input',e=>{if(e.target.id==='q')renderSearch()});
 document.addEventListener('focusin',e=>{if(e.target.id==='q')renderSearch()});
 window.addEventListener('hashchange',()=>{state.umenu=false;render()});
-document.addEventListener('submit',e=>{if(!e.target)return;if(e.target.id==='signinForm'){e.preventDefault();sendMagicLink()}else if(e.target.id==='codeForm'){e.preventDefault();verifyCode()}});
+document.addEventListener('submit',e=>{if(!e.target)return;if(e.target.id==='signinForm'){e.preventDefault();if(e.target.getAttribute('data-mode')==='code')sendMagicLink();else signInWithPassword()}else if(e.target.id==='codeForm'){e.preventDefault();verifyCode()}else if(e.target.id==='pwForm'){e.preventDefault();savePassword()}});
 
 /* =========================================================================
    8. Loader (data adapter), Supabase magic-link auth, settings sync, team feedback store
@@ -1409,17 +1415,70 @@ function cleanAuthHash(h){
   try{const p=new URLSearchParams(h.slice(1));const d=p.get('error_description');if(d)AUTH_ERR=d.replace(/\+/g,' ')}catch(e){}
   if(/(access_token|error_description|error_code)=/.test(location.hash||'')||location.hash==='#'||location.hash===''){try{history.replaceState(history.state,'',location.pathname+location.search+'#home')}catch(e){}}
 }
-function showSignIn(){
+function showSignIn(mode){
   SIGNIN=true;const m=document.getElementById('main');if(!m)return;
   document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
-  const cancel=BOOTED&&!needAuth();const errMsg=AUTH_ERR?`The last sign-in attempt did not work (${AUTH_ERR}). Request a new code.`:'';
-  m.innerHTML=`<div class="panel signin"><h1>Sign in to the AEGIS Daily Brief</h1><p class="lead">Enter your work email. We will email you a one-time code to type in here.</p>
-    <form id="signinForm" novalidate><label for="signinEmail">Email address</label><input id="signinEmail" name="email" type="email" autocomplete="email" inputmode="email" required aria-describedby="signinStatus" value="${esc(lastEmail)}">
-    <div class="row"><button class="btn primary" type="submit" id="signinSubmit">Send code</button>${cancel?'<button class="btn" type="button" data-signin-cancel>Cancel</button>':''}</div>
-    <p id="signinStatus" class="st ${errMsg?'err':''}">${esc(errMsg)}</p></form></div>`;
+  const cancel=BOOTED&&!needAuth();const errMsg=AUTH_ERR?`The last sign-in attempt did not work (${AUTH_ERR}). Try again.`:'';
+  const codeMode=mode==='code';
+  m.innerHTML=`<div class="panel signin"><h1>Sign in to the AEGIS Daily Brief</h1><p class="lead">${codeMode?'Enter your work email. We will email you a one-time code to type in here. Use this the first time you sign in, or if you forgot your password.':'Enter your work email and password.'}</p>
+    <form id="signinForm" novalidate data-mode="${codeMode?'code':'password'}"><label for="signinEmail">Email address</label><input id="signinEmail" name="email" type="email" autocomplete="username" inputmode="email" required aria-describedby="signinStatus" value="${esc(lastEmail)}">
+    ${codeMode?'':'<label for="signinPw">Password</label><input id="signinPw" name="password" type="password" autocomplete="current-password" required aria-describedby="signinStatus">'}
+    <div class="row"><button class="btn primary" type="submit" id="signinSubmit">${codeMode?'Send code':'Sign in'}</button>${cancel?'<button class="btn" type="button" data-signin-cancel>Cancel</button>':''}</div>
+    <p id="signinStatus" class="st ${errMsg?'err':''}">${esc(errMsg)}</p>
+    <p class="st" style="margin-top:.9rem">${codeMode?'<a href="#" data-signin-mode="password">Sign in with your password instead</a>':'First time here, or forgot your password? <a href="#" data-signin-mode="code">Email me a one-time code</a>'}</p></form></div>`;
   document.title='Sign in · AEGIS Daily Brief';renderRibbon();
-  const f=document.getElementById('signinEmail');if(f)f.focus();
-  announce(errMsg||'Sign in required. Enter your email address to get a sign-in code.');
+  const f=document.getElementById(codeMode||!lastEmail?'signinEmail':'signinPw');if(f)f.focus();
+  announce(errMsg||(codeMode?'Sign in required. Enter your email address to get a sign-in code.':'Sign in required. Enter your email address and password.'));
+}
+async function signInWithPassword(){
+  const inp=document.getElementById('signinEmail'),pw=document.getElementById('signinPw'),st=document.getElementById('signinStatus'),btn=document.getElementById('signinSubmit');
+  const email=String(inp&&inp.value||'').trim(),password=String(pw&&pw.value||'');lastEmail=email;
+  const say=(msg,cls)=>{if(st){st.textContent=msg;st.className='st '+(cls||'')}announce(msg)};
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter a valid email address.','err');return}
+  if(!password){if(pw){pw.setAttribute('aria-invalid','true');pw.focus()}say('Enter your password, or request a one-time code below.','err');return}
+  if(!SB){say('Sign-in is not configured for this page.','err');return}
+  if(btn)btn.disabled=true;say('Signing in…');
+  try{
+    const {error}=await SB.auth.signInWithPassword({email,password});
+    if(error)throw error;AUTH_ERR='';say('Signed in. Loading…','ok');   /* onAuthChange boots the page */
+  }catch(e){const msg=String(e&&e.message||e);
+    say(/invalid login credentials/i.test(msg)?'Email or password did not match. If you have not set a password yet, request a one-time code below.':/email not confirmed/i.test(msg)?'This account has not been verified yet. Request a one-time code below to verify it.':/rate limit|too many/i.test(msg)?'Too many attempts; wait a minute and try again.':'Could not sign in: '+msg,'err');
+    if(pw){pw.value='';pw.focus()}
+    if(btn)btn.disabled=false}
+}
+/* Set or change password. force=true blocks the app until a password is saved (first sign-in via code, or an
+   admin-created account whose placeholder password must never be used). */
+function showSetPassword(force){
+  PW_FORCE=!!force;const m=document.getElementById('main');if(!m)return;
+  document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');document.getElementById('side').innerHTML='';
+  m.innerHTML=`<div class="panel signin"><h1>${force?'Set your password':'Change your password'}</h1><p class="lead">${force?'You are verified. Choose a password for next time; you can always fall back to an emailed code.':'Choose a new password for '+esc(userEmail()||'this account')+'.'} At least 12 characters.</p>
+    <form id="pwForm" novalidate><label for="pw1">New password</label><input id="pw1" name="new-password" type="password" autocomplete="new-password" minlength="12" required aria-describedby="pwStatus">
+    <label for="pw2">Repeat it</label><input id="pw2" name="new-password-repeat" type="password" autocomplete="new-password" minlength="12" required aria-describedby="pwStatus">
+    <div class="row"><button class="btn primary" type="submit" id="pwSubmit">Save password</button>${force?'<button class="btn" type="button" id="pwSignOut">Sign out</button>':'<button class="btn" type="button" data-pw-cancel>Cancel</button>'}</div>
+    <p id="pwStatus" class="st"></p></form></div>`;
+  document.title=(force?'Set your password':'Change password')+' · AEGIS Daily Brief';renderRibbon();
+  const f=document.getElementById('pw1');if(f)f.focus();
+  announce(force?'Set a password to continue.':'Change your password.');
+}
+async function savePassword(){
+  const a=document.getElementById('pw1'),b=document.getElementById('pw2'),st=document.getElementById('pwStatus'),btn=document.getElementById('pwSubmit');
+  const p1=String(a&&a.value||''),p2=String(b&&b.value||'');
+  const say=(msg,cls)=>{if(st){st.textContent=msg;st.className='st '+(cls||'')}announce(msg)};
+  if(p1.length<12){if(a){a.setAttribute('aria-invalid','true');a.focus()}say('Use at least 12 characters.','err');return}
+  if(p1!==p2){if(b){b.setAttribute('aria-invalid','true');b.focus()}say('The two entries do not match.','err');return}
+  if(!SB||!userId()){showSignIn();return}
+  if(btn)btn.disabled=true;say('Saving…');
+  try{
+    const {error}=await SB.auth.updateUser({password:p1});
+    if(error)throw error;
+    const r=await SB.from('user_settings').upsert({user_id:userId(),pw_set:true},{onConflict:'user_id'});
+    if(r&&r.error)throw r.error;
+    PW_SET=true;PW_FORCE=false;announce('Password saved.');
+    try{if(/^#item-/.test(location.hash||''))history.replaceState(history.state,'',location.pathname+location.search+pageHash())}catch(e){}
+    if(BOOTED){renderSide();render()}else boot();
+  }catch(e){const msg=String(e&&e.message||e);
+    say(/weak|pwned|leaked|compromised|easy to guess/i.test(msg)?'That password has appeared in a known breach or is too easy to guess; choose another.':/same password/i.test(msg)?'That is already your password; choose a new one.':'Could not save the password: '+msg,'err');
+    if(btn)btn.disabled=false}
 }
 /* Step 2 of sign-in: the code field. Codes rather than links because mail-security scanners (Defender Safe Links on
    the syr.edu tenant) fetch every URL in an email before delivery, which redeems a one-time link before the reader
@@ -1454,7 +1513,7 @@ async function verifyCode(){
   const say=(msg,cls)=>{if(st){st.textContent=msg;st.className='st '+(cls||'')}announce(msg)};
   if(code.length<6||code.length>10){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter the numeric code from the email (6 to 10 digits).','err');return}
   if(inp)inp.removeAttribute('aria-invalid');
-  if(!SB||!lastEmail){showSignIn();return}
+  if(!SB||!lastEmail){showSignIn('code');return}
   if(btn)btn.disabled=true;say('Checking the code…');
   try{
     const {error}=await SB.auth.verifyOtp({email:lastEmail,token:code,type:'email'});
@@ -1468,7 +1527,7 @@ async function signOut(){
   state.umenu=false;renderUmenu();
   if(syncTimer){clearTimeout(syncTimer);syncTimer=null;try{await pushSettings()}catch(e){}}
   try{if(SB)await SB.auth.signOut({scope:'local'})}catch(e){}
-  SESSION=null;setAuthCookie(null);setStoreNs(null);renderAvatar();announce('Signed out');
+  SESSION=null;setAuthCookie(null);setStoreNs(null);PW_SET=true;PW_FORCE=false;renderAvatar();announce('Signed out');
   if(needAuth()){BOOTED=false;document.getElementById('side').innerHTML='';showSignIn();renderUmenu()}
   else render();
 }
@@ -1478,10 +1537,11 @@ async function pullSettings(){
   const uid=userId();if(!SB||!uid)return;
   setStoreNs(uid);   /* this user's cache, empty on a browser they have not used */
   try{
-    const q=SB.from('user_settings').select('my_areas,stars,viewed,theme').eq('user_id',uid).maybeSingle();
+    const q=SB.from('user_settings').select('my_areas,stars,viewed,theme,pw_set').eq('user_id',uid).maybeSingle();
     const r=await Promise.race([q,new Promise(res=>setTimeout(()=>res({timeout:true}),4000))]);
     if(!r||r.timeout||r.error)return;
-    if(!r.data){scheduleSettingsSync();return}   /* first sign-in: seed the row from this browser */
+    if(!r.data){PW_SET=false;scheduleSettingsSync();return}   /* first sign-in: seed the row from this user's (empty) cache */
+    PW_SET=r.data.pw_set===true;
     const arr=v=>Array.isArray(v)?v.filter(x=>typeof x==='string'):null;
     applyingRemote=true;
     try{

@@ -76,6 +76,14 @@ order by created_at desc;
 Open a screenshot from Storage, bucket `feedback-screenshots`, by its path. The view is not exposed through the
 API to anon or authenticated roles; only the dashboard (postgres) and the service key can read it.
 
+## Adding a user
+
+Authentication, Users, Add user, Create new user: their email, auto-confirm on. Whatever password you type there is a
+placeholder; the dashboard never lets it in. The user's first visit is: "Email me a one-time code", enter the code,
+then a mandatory "Set your password" card (migration 0003, `user_settings.pw_set`). After that they sign in with
+email + password; the code path doubles as password recovery. Keep "Allow new users to sign up" off, set Minimum
+password length to 12, and turn on "Prevent use of leaked passwords" (Authentication, Sign In / Providers, Email).
+
 ## Per-user state
 
 `my areas`, stars, recently viewed and theme live in `public.user_settings`, one row per user, pulled on every

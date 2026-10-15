@@ -2,6 +2,10 @@
 
 Design-cycle notes for `apps/web/dashboard.html`. These used to ship inside the page behind a "Design notes" toggle in the account menu; they were moved here in v1.3.1 so readers never see them.
 
+## v1.5.0 · password sign-in with code fallback
+
+Sign-in card is email + password, with "Email me a one-time code" for first sign-in and forgotten passwords. After a code sign-in, an account with `user_settings.pw_set` false is blocked behind a "Set your password" card (12+ characters, `auth.updateUser`), so an admin-set placeholder password is never the credential that gets someone in. "Change password" in the account menu. Migration 0003 adds `pw_set`.
+
 ## v1.4.0 · per-user browser cache
 
 The localStorage cache (my areas, stars, viewed, feedback list, collapsed sections, sidebar) is namespaced by user id and switched on sign-in and sign-out, so people sharing a browser never see or seed each other's state. A first sign-in on a new browser seeds the `user_settings` row from an empty set. Added the `feedback_review` view (migration 0002) for reading feedback with the submitter's email.
