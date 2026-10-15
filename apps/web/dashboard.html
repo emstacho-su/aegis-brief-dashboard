@@ -154,10 +154,6 @@ h1,h2,h3{text-wrap:balance}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
 .btn.sm{font-size:11px;padding:.15rem .5rem}
-.notes{max-width:1200px;margin:0 auto;padding:.9rem 16px 0;display:grid;gap:.6rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.note{background:var(--bg-primary);border:1px dashed rgba(88,166,255,.35);border-radius:var(--radius-lg);padding:.7rem .9rem;font-size:13px;color:var(--text-secondary);min-width:0}
-.note h4{margin:0 0 .3rem;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--external);font-family:var(--font-mono);font-weight:500}
-.note ul,.note ol{margin:.2rem 0 0;padding-left:1.1rem}.note li{margin:.12rem 0}.note p{margin:.2rem 0}
 
 /* Page scaffolding */
 .wrap{max-width:1200px;margin:0 auto;padding-block:1.1rem 2rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -490,7 +486,7 @@ footer .accent{color:var(--accent)}
   <div style="display:flex;align-items:center;gap:.5rem;min-width:0"><button class="menubtn" id="menubtn" aria-label="Open navigation" aria-expanded="false" aria-controls="side">☰</button><div class="brand">SU InfoSec<span class="pipe">|</span>AEGIS Daily Brief</div></div>
   <div class="hdr-right">
     <div class="search"><input id="q" type="search" placeholder="Search items, CVEs" autocomplete="off" aria-label="Search items"><div class="sres" id="sres" hidden></div></div>
-    <span class="ribbon" id="ribbon">v1.3</span>
+    <span class="ribbon" id="ribbon">v1.3.1</span>
     <button class="plus" id="fbBtn" title="Report a bug or request a change" aria-label="Report a bug or request a change"><span aria-hidden="true">+</span></button>
     <button class="avatar" id="avatarBtn" aria-expanded="false" aria-haspopup="menu" aria-label="Account menu" title="Account">A</button>
     <div class="umenu" id="umenu" hidden role="menu"></div>
@@ -498,7 +494,7 @@ footer .accent{color:var(--accent)}
 </header>
 <div class="shell">
   <aside class="side" id="side" aria-label="Sidebar"></aside>
-  <div class="content"><div class="notes" id="notes" hidden></div><main class="wrap" id="main" tabindex="-1"></main>
+  <div class="content"><main class="wrap" id="main" tabindex="-1"></main>
   <footer>Syracuse University <span class="accent">Information Security</span> &mdash; Daily Brief dashboard wireframe</footer></div>
 </div>
 <div id="ov"></div>
@@ -697,7 +693,7 @@ function buildIndex(){
    3. State, storage, routing
    ========================================================================= */
 (function(){try{const t=localStorage.getItem('aegis4-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();
-const state={pick:false,page:'home',date:TODAY_S,area:null,report:null,tab:'mine',level:new Map(),ctx:new Set(),f:{area:null,tier:null,status:null,source:null,period:30},sel:null,cum:false,notes:false,streamAll:false};
+const state={pick:false,page:'home',date:TODAY_S,area:null,report:null,tab:'mine',level:new Map(),ctx:new Set(),f:{area:null,tier:null,status:null,source:null,period:30},sel:null,cum:false,streamAll:false};
 const store={get(k,d){try{const v=localStorage.getItem('aegis4-'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('aegis4-'+k,JSON.stringify(v))}catch(e){}if(k==='my'||k==='stars'||k==='viewed')scheduleSettingsSync()}};
 let myAreas=new Set(store.get('my',[])),stars=new Set(store.get('stars',[])),viewed=store.get('viewed',[]);
 function markViewed(id){viewed=[id,...viewed.filter(x=>x!==id)].slice(0,12);store.set('viewed',viewed)}
@@ -1107,23 +1103,7 @@ rank 2  chunk c_1a07  doc d_feeds/${esc(it.source.name.toLowerCase().replace(/\s
 /* =========================================================================
    7. Notes, mount, events
    ========================================================================= */
-const NOTES=[
- {h:'v1.3 · data adapter and sign-in',b:'<p>The page loads its archive at startup from the container API (<span class="mono">/api/archive</span>) or, on static hosting, from the Supabase tables, chosen by <span class="mono">window.AEGIS_CONFIG</span>. With no config it falls back to the embedded sample. When sign-in is required, every view sits behind a Supabase magic link; signed-in viewers keep my areas, stars, recently viewed and theme in their account (browser storage stays as a cache), and feedback is saved to the team store. The ribbon names the data mode.</p>'},
- {h:'v1.1.1 · collapsible home sections',b:'<p>The relevance tab row and the Activity stream header highlight on hover like sidebar items; clicking their blank area collapses the content beneath them (tab buttons and the area filter still work). Collapsed state is remembered per browser; a hidden keyboard toggle appears on focus.</p>'},
- {h:'v1.1 · chart language',b:'<p>Charts follow the Sprout Social reference: KPI tiles with an arrow and percent change versus the previous period of equal length on every report and on the Trends landing; smoothed lines with a dotted moving-average series and an end dot; grouped bars (this period vs previous) for Items by area and Source contribution; ranked horizontal bars with the total at the right; a tooltip listing every series for the hovered day or mark (also on keyboard focus); the report title and question inside the chart card. Period is measured in briefs, so gaps in the archive do not distort it.</p>'},
- {h:'v1.0 · themes and accessibility',b:'<ul><li>Light and dark themes. Dark stays the design-system default; light follows the OS or the Theme control in the account menu. Light mode uses SU blue (the reserved --su-blue token) for every interactive accent; the orange header border and brand pipe stay in both themes. Each token set was checked against WCAG 2.1 AA: text 4.5:1 or better on every surface, control borders and chart marks 3:1 or better. Muted text and the control border were lifted from the canonical values, which is a design-system change request.</li><li>Keyboard: skip link, every chart mark, context bullet, timeline icon and card is focusable with a visible 3px focus ring; Enter and Space activate; Esc closes menus, popouts, tooltips and capture; focus returns to the opener when a popout closes.</li><li>Screen readers: landmarks, aria-current in the sidebar, accessible names on icon-only buttons and score rings, live announcements for saves and theme changes, page titles per route, data tables under every chart.</li><li>Feedback capture has keyboard paths (capture the visible screen, or skip the screenshot).</li></ul>'},
- {h:'v0.9 · cycle 5',b:'<ul><li>Sidebar collapses by clicking any blank space in it; no visible toggle (a hidden one appears for keyboard focus).</li><li>+ in the top bar: drag a box around a bug, the page region is captured (in-page DOM capture, no OS snipping tool), then a form asks what the bug is and what should change. Saved in this browser; the avatar menu lists captures and copies them as JSON until a shared store exists.</li><li>Sidebar area counts are the grey number of active items. Trends is a plain link to the report catalog.</li><li>Home and Area now work across the volume: an item is active if it appeared in any of the last 7 briefs. Carried items (active but not in today\'s brief) show a dashed "Last mm-dd" pill and sit after today\'s items in My areas, in the Area view, and in the area cards\' counts.</li></ul>'},
- {h:'v0.8 · sidebar',b:'<p>Sidebar collapses to a 56px icon rail (toggle at the top, remembered per browser); every item has a white line icon; "Today\'s brief" is a bold text item under "Your work" instead of a button. In the rail, a group icon navigates to that group\'s main view.</p>'},
- {h:'v0.8 · timeline',b:'<p>Popout timeline rebuilt on the Pipedrive contacts-timeline pattern: month headers, a track with continuous-run segments, circular icons pinned to the track (★ first brief, ≡ each brief with ring color = tier, CVE published below the track, ! escalation), TODAY line, hover tooltips with a snippet, hover-anywhere date cursor, dates under each icon on two staggered rows, horizontal scroll at 28px per day for long spans.</p>'},
- {h:'v0.7 · cycle 3 changes',b:'<ul><li>Sidebar navigation (Mailchimp pattern): primary action, accordion groups for Briefs, Areas, Trends; current page highlighted; collapses to a drawer under 900px.</li><li>Top bar: item search across the archive, version tag, account avatar with a menu (my areas, starred, recently viewed, design notes, reset). Sign-in or device detection to come.</li><li>Page TLP badge removed from the header.</li><li>Popout: one item-detail card (what it is, analysis, delta, SU impact, recommended actions); metadata as a short full-width strip.</li></ul>'},
- {h:'v0.5 · cycle 2 changes',b:'<ul><li>Home: tabs and activity stream are full width, stream below the tabs.</li><li>Area cards: red tint when the area has a Tier 1 item today; a corner ! (hover for the count) when it has more than one.</li><li>Daily brief: a "Relevant to my areas" card row above the list and actions; cards open the popout directly.</li></ul>'},
- {h:'v0.4 · the higher level',b:'<p>Jira "Your work" shape: area cards (rail = highest priority in the area today, quick links with counts, 30d sparkline), relevance tabs (My areas, New today, Escalations, Recently viewed, Starred), activity stream derived from the archive. Today\'s brief is now one level down.</p>'},
- {h:'Levels and clicks',b:'<ul><li>Home → area card (1) → item card expand (2) → popout (3) → source (4). Or Home → tab row → popout (2).</li><li>Trends → report (1) → chart mark (2) → listed item popout (3).</li><li>Archive → day (1) → brief → item (2) → popout (3).</li></ul>'},
- {h:'What the archive computes',b:'<p>Per item: first seen, days in brief, tier and score history, escalation days, dropped. Per day: counts, new, dropped, average ages. Events: new, returned, promoted, demoted, score jump (≥15), escalated, dropped, action raised, action closed. None of it is model-authored.</p>'},
- {h:'Assumptions to confirm',b:'<ul><li>Area taxonomy (nine environment domains) is a placeholder; items can belong to more than one.</li><li>"Dropped" means absent from the brief, never "resolved".</li><li>Viewer state (my areas, stars, recently viewed) is per browser; no accounts in Phase 3.</li><li>The 30-day volume must keep the per-day JSON, not only HTML, for any of this to work.</li></ul>'},
- {h:'Synthetic data',b:'<p>36 fictional items with scripted lifecycles over 30 days (2026-09-16 to 10-15), one invalid-schema day (09-23), periodic stale feed. Real briefs replace this in the next step.</p>'}
-];
-function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.3 · ${DATES.length} briefs · ${MODE}`:'v1.3'}
+function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.3.1 · ${DATES.length} briefs · ${MODE}`:'v1.3.1'}
 state.coll=new Set(store.get('coll',[]));state.side=new Set();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
 const I={
  home:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -1165,7 +1145,7 @@ function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.
   m.innerHTML=`${who}
     <a href="#home" data-tabgo="mine">My areas<span class="c">${myAreas.size}</span></a><a href="#home" data-tabgo="starred">Starred<span class="c">${stars.size}</span></a><a href="#home" data-tabgo="viewed">Recently viewed<span class="c">${viewed.length}</span></a>
     <div class="sep"></div><div style="padding:.4rem .9rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:13px"><span>Theme</span><span class="seg" role="group" aria-label="Theme">${['dark','light','system'].map(v=>`<button data-theme-set="${v}" aria-pressed="${curTheme()===v}" style="padding:.15rem .5rem;font-size:11px">${v}</button>`).join('')}</span></div>
-    <div class="sep"></div><button data-fblist>Feedback captured<span class="c">${fb.list.length}</span></button><button id="notesBtn">Design notes<span class="c">${state.notes?'on':'off'}</span></button><button id="resetBtn">Reset viewer state</button>
+    <div class="sep"></div><button data-fblist>Feedback captured<span class="c">${fb.list.length}</span></button><button id="resetBtn">Reset viewer state</button>
     <div class="sep"></div>${last}`}
 /* ---- Feedback capture: drag a region, DOM capture via html2canvas, describe, save locally ---- */
 let fb={mode:null,sx:0,sy:0,rect:null,shot:null,list:store.get('feedback',[]),toast:null};
@@ -1218,7 +1198,6 @@ function renderInner(){
     const main=document.getElementById('main');main.innerHTML=state.page==='home'?renderHome():state.page==='area'?renderArea():state.page==='brief'?renderBrief():state.page==='trends'?renderTrends():renderArchive();}
   renderSide();renderRibbon();renderUmenu();
   document.title=(h.item?'Item · ':'')+({home:'Your work',area:(AREAS[state.area]||{}).name||'Area',brief:'Daily brief '+state.date,trends:state.report?(REPORTS.find(r=>r.id===state.report)||{}).t||'Trends':'Trends',archive:'Archive'}[state.page]||'')+' · AEGIS Daily Brief';
-  const notes=document.getElementById('notes');notes.hidden=!state.notes;notes.innerHTML=NOTES.map(n=>`<div class="note"><h4>${n.h}</h4>${n.b}</div>`).join('');
 }
 let lastOpener=null;
 function closeOv(){location.hash=pageHash();setTimeout(()=>{const el=lastOpener&&document.querySelector(`[data-open="${lastOpener}"],[data-expand="${lastOpener}"]`);if(el)el.focus()},0)}
@@ -1249,7 +1228,6 @@ document.addEventListener('click',e=>{
   if(!t.closest('#umenu')&&!t.closest('#avatarBtn')&&state.umenu){state.umenu=false;renderUmenu()}
   if(!t.closest('.search'))document.getElementById('sres').hidden=true;
   if(t.closest('#side')&&t.closest('a')&&window.innerWidth<=900){state.sideOpen=false}
-  if(t.id==='notesBtn'){state.notes=!state.notes;render();return}
   if(t.id==='resetBtn'){myAreas=new Set();stars=new Set();viewed=[];store.set('my',[]);store.set('stars',[]);store.set('viewed',[]);render();return}
   if(t.closest('[data-pick]')){state.pick=!state.pick;render();return}
   const cb=t.closest('[data-collbtn]');if(cb){const k=cb.dataset.collbtn;state.coll.has(k)?state.coll.delete(k):state.coll.add(k);store.set('coll',[...state.coll]);render();announce(state.coll.has(k)?'Section collapsed':'Section expanded');return}

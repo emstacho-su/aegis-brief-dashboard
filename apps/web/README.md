@@ -4,7 +4,7 @@ One self-contained page, `dashboard.html` (no build step, no framework). It rend
 
 ## Three modes
 
-At startup the page reads `window.AEGIS_CONFIG` and loads its data before the first render. The ribbon in the header shows `v1.3 · <n> briefs · <mode>`.
+At startup the page reads `window.AEGIS_CONFIG` and loads its data before the first render. The ribbon in the header shows `v1.3.1 · <n> briefs · <mode>`.
 
 | Mode | When | Data comes from |
 |---|---|---|
@@ -79,7 +79,7 @@ aegis-worker ingest-dir data/briefs
 aegis-worker serve            # http://localhost:8080
 ```
 
-Open http://localhost:8080. The ribbon should read `v1.3 · 22 briefs · container`, and Archive rows should have "Open stored page" links. To test sign-in, start the worker with `SUPABASE_URL` and `SUPABASE_ANON_KEY` set and add `http://localhost:8080/` to the Supabase redirect URLs.
+Open http://localhost:8080. The ribbon should read `v1.3.1 · 22 briefs · container`, and Archive rows should have "Open stored page" links. To test sign-in, start the worker with `SUPABASE_URL` and `SUPABASE_ANON_KEY` set and add `http://localhost:8080/` to the Supabase redirect URLs.
 
 Static mode: copy `config.example.js` to `config.js`, fill in the project URL and anon key, and serve the folder over HTTP (`python3 -m http.server 8000` in `apps/web/`, then open `http://localhost:8000/dashboard.html`). Magic links do not work from `file://`.
 
