@@ -419,6 +419,43 @@ function fakeSupabase(db) {
     console.log('5. motion          skeleton + status line, enter keyed to route/tab/expand, FLIP fallback, closeOv, busy buttons, accordion markup, toast leaving');
   }
 
+  /* --- regressions: archive-search-feedback --- */
+  {
+    const env = await start();
+    const { run, ctx, els } = env;
+    /* archive rows are keyboard reachable links */
+    const arch = run('renderArchive()');
+    const rows = arch.match(/<tr class="rowlink"[^>]*>/g) || [];
+    ok(rows.length > 0 && rows.every(r => /tabindex="0"/.test(r) && /role="link"/.test(r) && /aria-label="Open brief \d{4}-\d{2}-\d{2}"/.test(r)), 'archive rows lack tabindex/role/aria-label');
+    /* search results: listbox options, capped list says how many more */
+    const q = ctx.document.getElementById('q');
+    q.value = 'cve-'; ctx.document.activeElement = q;
+    run('renderSearch()');
+    const sres = els.get('sres');
+    ok(!sres.hidden && /role="option"/.test(sres.innerHTML) && /id="sr-0"/.test(sres.innerHTML), 'search rows are not role="option"');
+    ok(sres.getAttribute('role') === 'listbox' && q.getAttribute('role') === 'combobox', 'search box/list lack combobox/listbox roles');
+    const total = run("searchMatches('cve-').length");
+    if (total > 8) ok(new RegExp(`${total - 8} more, keep typing`).test(sres.innerHTML), 'capped search did not say how many more');
+    run('searchChoose(0)');
+    ok(sres.hidden === true && /^#item-/.test(ctx.location.hash), 'choosing a search result did not close the dropdown and open the item');
+    ctx.location.hash = '#home'; run('render()');
+    /* feedback: skip message, saved toast, timestamp format */
+    run('fbStart()'); run('fbSkip()');
+    ok(/No screenshot attached\. The description still saves\./.test(els.get('fbroot').innerHTML) && !/capture library not loaded/.test(els.get('fbroot').innerHTML), 'skip message wrong');
+    run('fbSave()');
+    const root = els.get('fbroot').innerHTML;
+    ok(/class="fbtoast ok"/.test(root) && /Feedback saved \(1 in this browser\)/.test(root) && /data-toastx/.test(root), 'save did not show the toast: ' + root);
+    run('fb.toast=null;fbRender()');
+    const when = run("fmtWhen('2026-10-15T13:04:05.678Z')");
+    ok(typeof when === 'string' && !/T/.test(when) && !/\.678/.test(when) && /2026|26/.test(when), 'timestamp format: ' + when);
+    ok(run("fmtWhen('not a date')") === 'not a date', 'fmtWhen did not fall back for a bad date');
+    run('fb.mode="list";fbRender()');
+    ok(/title="2026-|title="\d{4}-/.test(els.get('fbroot').innerHTML), 'list lacks the ISO value in a title attribute');
+    ok(env.errors.length === 0, `archive-search-feedback console.error: ${env.errors.slice(0, 3).join(' | ')}`);
+    console.log('6. archive/search/feedback  row a11y, listbox, more hint, skip text, saved toast, timestamps');
+  }
+  /* --- end regressions: archive-search-feedback --- */
+
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
