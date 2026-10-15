@@ -63,6 +63,9 @@ h1,h2,h3{text-wrap:balance}
 .hdr-right{display:flex;align-items:center;gap:.6rem;flex-shrink:0;position:relative}
 .menubtn{display:none;font-size:18px;color:var(--text-secondary);padding:.2rem .4rem;border-radius:var(--radius-md)}
 .menubtn:hover{color:var(--text-primary);background:var(--bg-hover)}
+.umenu .tseg{display:inline-flex;flex-direction:row;gap:2px;padding:2px;border:1px solid var(--border-ctrl);border-radius:var(--radius-md)}
+.umenu .tseg button{width:auto;display:inline-block;border-radius:var(--radius-sm);color:var(--text-secondary)}
+.umenu .tseg button[aria-pressed="true"]{background:var(--bg-hover);color:var(--text-primary);box-shadow:inset 0 0 0 1px var(--accent);font-weight:600}
 .search{position:relative}
 .search input{font-family:var(--font-ui);background:var(--bg-canvas);border:1px solid var(--border-ctrl);border-radius:var(--radius-md);color:var(--text-primary);font-size:13px;padding:.35rem .6rem .35rem 1.7rem;width:240px;max-width:40vw}
 .search input:focus{outline:none;border-color:var(--accent)}
@@ -148,6 +151,9 @@ h1,h2,h3{text-wrap:balance}
 .side .ic{width:14px;display:inline-block;text-align:center;color:var(--text-muted);margin-right:.35rem;font-family:var(--font-mono);font-size:11px}
 .content{min-width:0}
 @media (max-width:900px){.shell{grid-template-columns:1fr}.side{position:fixed;left:0;top:56px;width:min(280px,86vw);z-index:40;transform:translateX(-105%);transition:transform .15s;box-shadow:var(--shadow)}.side.open{transform:none}.menubtn{display:inline-block}}
+@media (max-width:600px){.hdr{gap:.5rem}.hdr>div:first-child{flex:1 1 auto}.brand{overflow:hidden;text-overflow:ellipsis;min-width:0}.hdr-right{flex-shrink:1;min-width:0;gap:.4rem}.ribbon{display:none}
+  .search{flex:1 1 auto;min-width:0}.search input{width:34px;max-width:none;min-width:0;padding-right:0;cursor:pointer}.search input::placeholder{color:transparent}.search input:not(:focus){color:transparent}
+  .search:focus-within{position:fixed;left:12px;right:12px;top:10px;z-index:70}.search:focus-within input{width:100%;cursor:text;color:var(--text-primary)}.search:focus-within input::placeholder{color:var(--text-muted)}}
 .pbody{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.9rem 1.1rem;margin-bottom:1rem}
 .pbody h3{margin:0 0 .5rem;font-size:14px;font-weight:600}
 .pbody .sub{font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin:.8rem 0 .25rem;padding-top:.6rem;border-top:1px solid var(--border-muted)}
@@ -555,7 +561,7 @@ html.theming,html.theming *{transition:background-color .22s ease,color .22s eas
 <div class="shell">
   <aside class="side" id="side" aria-label="Sidebar"></aside>
   <div class="content"><main class="wrap" id="main" tabindex="-1"></main>
-  <footer>Syracuse University <span class="accent">Information Security</span> &mdash; Daily Brief dashboard wireframe</footer></div>
+  <footer>Syracuse University <span class="accent">Information Security</span> &mdash; Daily Brief dashboard</footer></div>
 </div>
 <div id="ov"></div>
 <div id="fbroot"></div>
@@ -790,8 +796,9 @@ function parseHash(){
   if(h==='trends')return {page:'trends',report:null};
   if(h.startsWith('trends-'))return {page:'trends',report:h.slice(7)};
   if(h==='archive')return {page:'archive'};
-  return {page:'home'};
+  return {page:'home',unknown:true};
 }
+const plural=(n,one,many)=>n===1?one:(many||one+'s'); /* word for a count: plural(2,'brief') -> 'briefs' */
 function pageHash(){return state.page==='home'?'#home':state.page==='brief'?(state.date===TODAY_S?'#brief':'#brief-'+state.date):state.page==='area'?'#area-'+state.area:state.page==='trends'?(state.report?'#trends-'+state.report:'#trends'):'#archive'}
 
 /* =========================================================================
@@ -854,7 +861,7 @@ function ctxCard(key,title,arr,extra){
   return `<div class="card"><h3>${title}</h3><ul class="ctx">${arr.map((x,i)=>{const k=key+'-'+i,open=state.ctx.has(k);return `<li class="${open?'open':''}"><div class="one" data-ctx="${k}" role="button" tabindex="0" aria-expanded="${open}"><span class="tx">${esc(x.t)}</span><span class="cv" aria-hidden="true">${open?'▴':'▾'}</span></div><p class="more">${esc(x.d)}</p><div class="s">${extra?extra(x):esc(x.s)}</div></li>`}).join('')}</ul></div>`;
 }
 function contextCards(b){const c=b.context;return `<div class="stack">${ctxCard('geo','Geopolitical & threat context',c.geopolitical)}${ctxCard('ai','AI watch',c.ai_watch)}${ctxCard('wl','Watchlist',c.watchlist,x=>`since ${esc(x.since)} · trigger: ${esc(x.trigger)}`)}</div>`}
-function healthStrip(b){const r=b.run;return `<div class="health"><span>run ${esc(r.at)}</span><span>model ${esc(r.model)}</span><span>schema ${esc(r.schema)} ${r.valid?'✓':'<span class="bad">✗</span>'}</span><span class="${r.stale.length?'bad':''}">feeds ${r.feeds_fresh}/${r.feeds_total} fresh${r.stale.length?` (stale: ${esc(r.stale.join(', '))})`:''}</span><span>retrieval ${r.chunks} chunks, ${r.prior_chunks} from prior briefs</span><span>archive ${DATES.length} days</span></div>`}
+function healthStrip(b){const r=b.run;return `<div class="health"><span>run ${esc(r.at)}</span><span>model ${esc(r.model)}</span><span>schema ${esc(r.schema)} ${r.valid?'✓':'<span class="bad">✗</span>'}</span><span class="${r.stale.length?'bad':''}">feeds ${r.feeds_fresh}/${r.feeds_total} fresh${r.stale.length?` (stale: ${esc(r.stale.join(', '))})`:''}</span><span>retrieval ${r.chunks} chunks, ${r.prior_chunks} from prior briefs</span><span>archive ${DATES.length} ${plural(DATES.length,'day')}</span></div>`}
 function sparkline(vals,w=72,h=18){const mx=Math.max(1,...vals);const pts=vals.map((v,i)=>[i/(vals.length-1)*w,h-2-(v/mx)*(h-4)]);const p=pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ');return `<svg class="spark" viewBox="0 0 ${w} ${h}"><path class="fill" d="${p} L${w} ${h} L0 ${h} Z"/><path d="${p}"/></svg>`}
 const EV_G={new:'+',returned:'↩',promoted:'▲',demoted:'▽',score_jump:'Δ',escalated:'!',dropped:'−',action_raised:'◻',action_closed:'✓'};
 function streamHtml(evts,o={}){
@@ -953,7 +960,7 @@ function areaStats(k,b){
   return {items,t1,nw,escN,acts,maxPri,series,lastT1,active,maxScore:Math.max(0,...items.map(i=>i.score))};
 }
 function areaCard(k){const a=AREAS[k],s=areaStats(k,BRIEFS[TODAY_S]);const mine=myAreas.has(k);
-  return `<a class="acard ${s.t1?'hot':''}" href="#area-${k}" data-flip="area:${k}" ${s.t1?`title="${s.t1} Tier 1 item${s.t1===1?'':'s'} in this area today"`:''}><div class="rail-c ${s.maxPri}"></div>${s.t1>1?`<span class="corner" title="${s.t1} Tier 1 items in this area today">!</span>`:''}<div class="in"><div class="nm">${mine?'<span class="star" title="My area">★</span>':''}${esc(a.name)}</div><div class="st">${s.items.length} today · ${s.active.length} active across ${Math.min(RELEVANT_WINDOW,DATES.length)} briefs${s.items.length?` · top ${s.maxScore}`:''}</div>
+  return `<a class="acard ${s.t1?'hot':''}" href="#area-${k}" data-flip="area:${k}" ${s.t1?`title="${s.t1} Tier 1 item${s.t1===1?'':'s'} in this area today"`:''}><div class="rail-c ${s.maxPri}"></div>${s.t1>1?`<span class="corner" title="${s.t1} Tier 1 items in this area today">!</span>`:''}<div class="in"><div class="nm">${mine?'<span class="star" title="My area">★</span>':''}${esc(a.name)}</div><div class="st">${s.items.length} today · ${s.active.length} active across ${Math.min(RELEVANT_WINDOW,DATES.length)} ${plural(Math.min(RELEVANT_WINDOW,DATES.length),'brief')}${s.items.length?` · top ${s.maxScore}`:''}</div>
     <div class="ql">Quick links</div><div class="lk"><span>Action required</span><span class="pc ${s.t1?'hot':''}">${s.t1}</span></div><div class="lk"><span>New today</span><span class="pc ${s.nw?'new':''}">${s.nw}</span></div><div class="lk"><span>Carried, not in today's brief</span><span class="pc">${s.active.filter(i=>i._carried).length}</span></div><div class="lk"><span>${actionLike(BRIEFS[TODAY_S],k).label}</span><span class="pc ${HAS_REAL&&s.acts?'hot':''}">${s.acts}</span></div>
     <div class="ft"><span>${s.lastT1===null?'no Tier 1 in 30d':s.lastT1===0?'Tier 1 today':`last Tier 1: ${s.lastT1}d ago`}</span>${sparkline(s.series)}</div></div></a>`;
 }
@@ -976,8 +983,8 @@ function renderHome(){
   const evts=IDX.events.filter(e=>!state.f.area||e.areas.includes(state.f.area)).sort((p,q)=>q.date.localeCompare(p.date)||q.w-p.w);
   const shown=state.streamAll?evts:evts.filter(e=>e.date>=DATES[DATES.length-3]);
   return `<div class="ph"><h1>Your work</h1><span class="sub">Brief ${TODAY_S} · ${b.items.length} items · <a href="#brief">open today's brief</a></span></div>
-  <div class="counts">${tile('Items today',b.items.length,b.items.length-y.items.length)}${tile(`Active · ${Math.min(RELEVANT_WINDOW,DATES.length)} briefs`,activeItems().length)}${tile('Tier 1',cnt(b,i=>i.tier===1),cnt(b,i=>i.tier===1)-cnt(y,i=>i.tier===1),'t1')}${tile('New today',cnt(b,i=>i.status==='new'))}${tile('Escalations',cnt(b,i=>i.escalation.required),null,'esc')}${tile(actionLike(b).label,actionLike(b).count,actionLike(b).count-actionLike(y).count)}${b.threat_level?tile('Threat level',`<span class="pr ${b.threat_level==='CRITICAL'?'critical':b.threat_level==='HIGH'?'high':'medium'}" style="font-size:14px">${esc(b.threat_level)}</span>`):''}${tile('Avg item age',IDX.daily[TODAY].avgAge.toFixed(1)+'<span class="muted" style="font-size:12px;font-weight:400">d</span>')}</div>
-  <div class="sec-h"><h2>Areas<span class="sub">${myAreas.size?'yours first, then by highest priority':'sorted by highest priority today; pick yours below'} · active = seen in the last ${Math.min(RELEVANT_WINDOW,DATES.length)} briefs</span></h2><div class="tools"><a href="#trends-byarea">30d by area</a></div></div>
+  <div class="counts">${tile('Items today',b.items.length,b.items.length-y.items.length)}${tile(`Active · ${Math.min(RELEVANT_WINDOW,DATES.length)} ${plural(Math.min(RELEVANT_WINDOW,DATES.length),'brief')}`,activeItems().length)}${tile('Tier 1',cnt(b,i=>i.tier===1),cnt(b,i=>i.tier===1)-cnt(y,i=>i.tier===1),'t1')}${tile('New today',cnt(b,i=>i.status==='new'))}${tile('Escalations',cnt(b,i=>i.escalation.required),null,'esc')}${tile(actionLike(b).label,actionLike(b).count,actionLike(b).count-actionLike(y).count)}${b.threat_level?tile('Threat level',`<span class="pr ${b.threat_level==='CRITICAL'?'critical':b.threat_level==='HIGH'?'high':'medium'}" style="font-size:14px">${esc(b.threat_level)}</span>`):''}${tile('Avg item age',IDX.daily[TODAY].avgAge.toFixed(1)+'<span class="muted" style="font-size:12px;font-weight:400">d</span>')}</div>
+  <div class="sec-h"><h2>Areas<span class="sub">${myAreas.size?'yours first, then by highest priority':'sorted by highest priority today; pick yours below'} · active = seen in the last ${Math.min(RELEVANT_WINDOW,DATES.length)} ${plural(Math.min(RELEVANT_WINDOW,DATES.length),'brief')}</span></h2><div class="tools"><a href="#trends-byarea">30d by area</a></div></div>
   <div class="areas">${order.map(areaCard).join('')}</div>
   <section class="sec ${state.coll.has('tabs')?'is-collapsed':''}" id="sec-tabs"><div class="tabs collh ${state.coll.has('tabs')?'is-collapsed':''}" role="tablist" data-coll="tabs" title="Click the blank area to ${state.coll.has('tabs')?'expand':'collapse'}">${tabs.map(([k,l,c])=>`<button role="tab" aria-selected="${state.tab===k}" data-tab="${k}">${l}${c!=null?`<span class="c">${c}</span>`:''}</button>`).join('')}<span class="hint" aria-hidden="true">${state.coll.has('tabs')?'collapsed · click to expand':'click to collapse'}</span><button class="ktg" data-collbtn="tabs" aria-expanded="${!state.coll.has('tabs')}" aria-controls="sec-tabs">${state.coll.has('tabs')?'Expand list':'Collapse list'}</button></div><div class="secbody${animOn('tab','tabs')||animOn('coll','tabs')?' enter':''}">${list}</div></section>
   <section class="sec ${state.coll.has('stream')?'is-collapsed':''}" id="sec-stream"><div class="sec-h collh ${state.coll.has('stream')?'is-collapsed':''}" data-coll="stream" title="Click the blank area to ${state.coll.has('stream')?'expand':'collapse'}"><h2>Activity stream<span class="sub">${state.f.area?AREAS[state.f.area].name:'all areas'} · ${state.streamAll?'30 days':'today and yesterday'}</span></h2><span class="hint" aria-hidden="true">${state.coll.has('stream')?'collapsed · click to expand':'click to collapse'}</span><button class="ktg" data-collbtn="stream" aria-expanded="${!state.coll.has('stream')}" aria-controls="sec-stream">${state.coll.has('stream')?'Expand stream':'Collapse stream'}</button><div class="tools"><select class="sel" data-f="area" style="font-size:11px;padding:.1rem .3rem" aria-label="Filter stream by area"><option value="">All areas</option>${Object.entries(AREAS).map(([k,a])=>`<option value="${k}" ${state.f.area===k?'selected':''}>${esc(a.name)}</option>`).join('')}</select></div></div>
@@ -1011,7 +1018,7 @@ function renderBrief(){
   items.forEach(it=>{if(it.tier!==lastTier){rows+=`<div class="band ${it.tier===1?'t1':''}">Tier ${it.tier} · ${TIER_NAME[it.tier]}${it.tier<lastTier?' · <span style="color:var(--degraded)">out of score order</span>':''}</div>`;lastTier=it.tier}rows+=itemCard(it)});
   return `<div class="crumb"><a href="#home">Your work</a><span>›</span><span>Daily brief</span></div>
   <div class="ph"><div><h1>Daily brief · <span class="mono">${esc(b.date)}</span>${b.date===TODAY_S?' <span class="pill new">Today</span>':''}</h1><span class="sub">${b.items.length} items · baseline ${b.baseline_date||'none'}${b.threat_level?` · threat level <span class="pr ${b.threat_level==='CRITICAL'?'critical':b.threat_level==='HIGH'?'high':'medium'}">${esc(b.threat_level)}</span>`:''}</span></div>
-  <div style="display:flex;gap:.35rem;align-items:center"><a class="btn sm" href="${di>0?'#brief-'+DATES[di-1]:'#'}" ${di>0?'':'style="opacity:.4;pointer-events:none"'}>‹ ${di>0?DATES[di-1]:''}</a><a class="btn sm" href="${di<TODAY?'#brief-'+DATES[di+1]:'#'}" ${di<TODAY?'':'style="opacity:.4;pointer-events:none"'}>${di<TODAY?DATES[di+1]:''} ›</a><a class="btn sm" href="#archive">Archive</a></div></div>
+  <div style="display:flex;gap:.35rem;align-items:center">${di>0?`<a class="btn sm" href="#brief-${DATES[di-1]}">‹ ${DATES[di-1]}</a>`:'<span class="btn sm" aria-disabled="true" style="opacity:.4">‹</span>'}${di<TODAY?`<a class="btn sm" href="#brief-${DATES[di+1]}">${DATES[di+1]} ›</a>`:'<span class="btn sm" aria-disabled="true" style="opacity:.4">›</span>'}<a class="btn sm" href="#archive">Archive</a></div></div>
   ${b.run.valid?'':'<div class="banner-err">This brief failed schema validation. Content below may be incomplete.</div>'}
   ${(b.banners||[]).map(x=>`<div class="banner-err" style="${x.cls==='warn'?'color:var(--degraded);border-color:rgba(250,222,42,.35);background:rgba(250,222,42,.08)':''}">${esc(x.text)}</div>`).join('')}
   ${relevantSection(b)}
@@ -1178,7 +1185,7 @@ rank 2  chunk c_1a07  doc d_feeds/${esc(it.source.name.toLowerCase().replace(/\s
 /* =========================================================================
    7. Notes, mount, events
    ========================================================================= */
-function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.6.0 · ${DATES.length} briefs · ${MODE}`:'v1.6.0'}
+function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.6.0 · ${DATES.length} ${plural(DATES.length,'brief')} · ${MODE}`:'v1.6.0'}
 state.coll=new Set(store.get('coll',[]));state.side=new Set();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
 const I={
  home:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
@@ -1201,6 +1208,7 @@ function renderSide(){
   const briefsL=DATES.slice(-6,-1).reverse().map(d=>lnk('#brief-'+d,'day',d,is('brief',state.date===d),`<span class="dotc ${BRIEFS[d].items.some(i=>i.tier===1)?'hot':''}">${BRIEFS[d].items.filter(i=>i.tier===1).length||''}</span>`)).join('')+lnk('#archive','archive','Archive',is('archive'),`<span class="dotc">${DATES.length}d</span>`);
   const groups=[['briefs','Briefs','briefs','#brief',briefsL,state.page==='brief'||state.page==='archive'],['areas','Areas','areas','#home',areasL,state.page==='area']];
   const escN=b.items.filter(i=>i.escalation.required).length;
+  const fkey=focusKey(document.activeElement); /* the collapse toggle re-renders only the sidebar */
   document.getElementById('side').innerHTML=`<nav aria-label="Primary"><div class="tgl"><button id="sideTgl" aria-label="${col?'Expand sidebar':'Collapse sidebar'}">${col?'Expand sidebar':'Collapse sidebar'}</button></div>
     ${lnk('#home','home','Your work',is('home'),escN?`<span class="dotc hot">${escN} esc</span>`:'','top')}
     ${lnk('#brief','brief',"Today's brief",is('brief',state.date===TODAY_S),`<span class="dotc">${esc(TODAY_S.slice(5))}</span>`,'top')}
@@ -1208,19 +1216,27 @@ function renderSide(){
       ?`<div class="grp"><a class="hd2 ${auto?'on':''}" href="${href}" title="${l}"><span class="lb">${I[icon]}</span></a></div>`
       :`<div class="grp ${open?'open':''}"><button class="hd2" data-grp="${k}" aria-expanded="${open}"><span class="lb">${I[icon]}<span class="tx">${l}</span></span><span class="chev">${open?'▴':'▾'}</span></button><div class="sub"><div class="in">${inner}</div></div></div>`}).join('')}
     ${lnk('#trends','trends','Trends',is('trends'),state.report?`<span class="dotc">${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}</span>`:'','top')}</nav>`;
-  const side=document.getElementById('side');side.classList.toggle('open',state.sideOpen);side.classList.toggle('collapsed',col);
+  const side=document.getElementById('side');side.classList.toggle('open',state.sideOpen);side.classList.toggle('collapsed',col);syncMenubtn();restoreFocus(fkey);
   const shell=document.querySelector('.shell');if(shell)shell.classList.toggle('collapsed',col);
+}
+function syncMenubtn(){const b=document.getElementById('menubtn');if(b)b.setAttribute('aria-expanded',String(!!state.sideOpen))}
+function closeDrawer(focusBtn){state.sideOpen=false;const s=document.getElementById('side');if(s)s.classList.remove('open');syncMenubtn();if(focusBtn){const b=document.getElementById('menubtn');if(b)b.focus()}}
+function closeUmenu(focusBtn){state.umenu=false;renderUmenu();if(focusBtn){const b=document.getElementById('avatarBtn');if(b)b.focus()}}
+function resetAll(){ /* everything this page keeps in the browser, back to first-visit state */
+  myAreas=new Set();stars=new Set();viewed=[];fb.list=[];state.coll=new Set();state.sideCollapsed=false;
+  ['my','stars','viewed','coll','sidecol','feedback'].forEach(k=>{try{localStorage.removeItem(STORE_NS+k)}catch(e){}});
+  setTheme('system');scheduleSettingsSync();fbRender();render();announce('Everything saved in this browser was reset');
 }
 function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.umenu;document.getElementById('avatarBtn').setAttribute('aria-expanded',String(state.umenu));renderAvatar();
   const em=userEmail();
   const who=em?`<div class="who"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(em)}</b><span>signed in · settings follow your account</span></div>`
     :SB?`<div class="who"><b>Analyst</b><span>not signed in · settings stay in this browser</span></div>`
-    :`<div class="who"><b>Analyst</b><span>sign-in or device detection to come</span></div>`;
-  const last=em?`<button id="menuPwBtn">Change password</button><button id="signOutBtn">Sign out</button>`:SB?`<button id="menuSignInBtn">Sign in</button>`:`<button class="dis" disabled>Sign out<span class="c">later</span></button>`;
+    :`<div class="who"><b>Analyst</b><span>not signed in · settings stay in this browser</span></div>`;
+  const last=em?`<button id="menuPwBtn" role="menuitem">Change password</button><button id="signOutBtn" role="menuitem">Sign out</button>`:SB?`<button id="menuSignInBtn" role="menuitem">Sign in</button>`:`<button class="dis" disabled role="menuitem" aria-disabled="true" title="Sign-in needs the Supabase build of this dashboard">Sign in<span class="c">needs Supabase</span></button>`;
   m.innerHTML=`${who}
-    <a href="#home" data-tabgo="mine">My areas<span class="c">${myAreas.size}</span></a><a href="#home" data-tabgo="starred">Starred<span class="c">${stars.size}</span></a><a href="#home" data-tabgo="viewed">Recently viewed<span class="c">${viewed.length}</span></a>
-    <div class="sep"></div><div style="padding:.4rem .9rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:13px"><span>Theme</span><span class="seg" role="group" aria-label="Theme">${['dark','light','system'].map(v=>`<button data-theme-set="${v}" aria-pressed="${curTheme()===v}" style="padding:.15rem .5rem;font-size:11px">${v}</button>`).join('')}</span></div>
-    <div class="sep"></div><button data-fblist>Feedback captured<span class="c">${fb.list.length}</span></button><button id="resetBtn">Reset viewer state</button>
+    <a href="#home" role="menuitem" data-tabgo="mine">My areas<span class="c">${myAreas.size}</span></a><a href="#home" role="menuitem" data-tabgo="starred">Starred<span class="c">${stars.size}</span></a><a href="#home" role="menuitem" data-tabgo="viewed">Recently viewed<span class="c">${viewed.length}</span></a>
+    <div class="sep"></div><div style="padding:.4rem .9rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:13px"><span>Theme</span><span class="tseg" role="group" aria-label="Theme">${['dark','light','system'].map(v=>`<button data-theme-set="${v}" aria-pressed="${curTheme()===v}" style="padding:.15rem .5rem;font-size:11px">${v}</button>`).join('')}</span></div>
+    <div class="sep"></div><button data-fblist role="menuitem">Feedback captured<span class="c">${fb.list.length}</span></button><button id="resetBtn" role="menuitem">Reset everything saved in this browser</button>
     <div class="sep"></div>${last}`}
 /* ---- Feedback capture: drag a region, DOM capture via html2canvas, describe, save locally ---- */
 let fb={mode:null,sx:0,sy:0,rect:null,shot:null,list:store.get('feedback',[]),toast:null};
@@ -1287,7 +1303,8 @@ function flipRender(){
     el.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'none'}],{duration:FLIP_MS,easing:'cubic-bezier(.2,.7,.2,1)'})});
 }
 function render(){
-  if(!BOOTED){state.anim=null;return} /* the loader (boot) owns #main until data is in */
+  if(!BOOTED){state.anim=null;return}
+  if(location.hash==='#main'){skipToMain();return} /* the loader (boot) owns #main until data is in */
   if(needAuth()&&SESSION&&!PW_SET){state.anim=null;showSetPassword(true);return}
   try{renderInner();fitTwo()}catch(e){
     if(typeof console!=='undefined')console.error('AEGIS render failed',e);
@@ -1300,13 +1317,32 @@ function render(){
    for example when the page boots on an #item- link. lastItemKey: the popout plays its entrance only for a new item. */
 let MAIN_STALE=false,lastItemKey=null;
 function paintMain(){const main=document.getElementById('main');main.innerHTML=state.page==='home'?renderHome():state.page==='area'?renderArea():state.page==='brief'?renderBrief():state.page==='trends'?renderTrends():renderArchive();markViewEnter(main);MAIN_STALE=false}
+/* Focus survives a re-render: remember the focused control by id or data attribute, find its twin afterwards. */
+const FOCUS_ATTRS=['data-tab','data-my','data-star','data-collapse','data-expand','data-open','data-grp','data-coll','data-f','data-ctx','data-fbdel','data-retry','data-streamall','data-exp','data-col','data-clear'];
+function focusKey(el){
+  if(!el||!el.hasAttribute||(el.closest&&el.closest('#ov')))return null; /* the popout manages its own focus */
+  if(el.id)return '#'+el.id;
+  const a=FOCUS_ATTRS.find(x=>el.hasAttribute(x));
+  return a?`[${a}="${String(el.getAttribute(a)).replace(/["\\]/g,'\\$&')}"]`:null;
+}
+function restoreFocus(key){
+  if(!key)return;let el=null;try{el=document.querySelector(key)}catch(e){return}
+  if(el&&el!==document.activeElement&&el.focus)el.focus({preventScroll:true});
+}
+function skipToMain(){ /* #main is the skip-link target, not a route: keep the page, move focus */
+  try{history.replaceState(history.state,'',location.pathname+location.search+pageHash())}catch(e){}
+  const m=document.getElementById('main');if(m)m.focus();
+}
 function renderInner(){
   const h=parseHash();
+  const fkey=h.item?null:focusKey(document.activeElement);
   if(h.item){/* overlay over current page */ lastOpener=h.item;markViewed(h.item);if(MAIN_STALE)paintMain();const fresh=h.item!==lastItemKey;lastItemKey=h.item;document.getElementById('ov').innerHTML=renderDetail(h.item,fresh);document.body.classList.add('locked');const c=document.querySelector('#ov .close');if(c)c.focus()}
   else{lastItemKey=null;Object.assign(state,{page:h.page});if(h.date)state.date=BRIEFS[h.date]?h.date:TODAY_S;if(h.area!==undefined)state.area=h.area;if(h.report!==undefined){if(state.report!==h.report)state.sel=null;state.report=h.report}
     document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
+    if(h.unknown){try{history.replaceState(history.state,'',location.pathname+location.search+'#home')}catch(e){}}
     paintMain()}
   renderSide();renderRibbon();renderUmenu();
+  restoreFocus(fkey);
   document.title=(h.item?'Item · ':'')+({home:'Your work',area:(AREAS[state.area]||{}).name||'Area',brief:'Daily brief '+state.date,trends:state.report?(REPORTS.find(r=>r.id===state.report)||{}).t||'Trends':'Trends',archive:'Archive'}[state.page]||'')+' · AEGIS Daily Brief';
 }
 /* Two-column pages (brief, area): measure the item column against the rail in the normal layout and wrap the rail
@@ -1351,7 +1387,7 @@ document.addEventListener('click',e=>{
   const grp=t.closest('[data-grp]');if(grp){const k=grp.dataset.grp;const open=grp.getAttribute('aria-expanded')==='true';if(open){state.side.delete(k);state.side.add('!'+k)}else{state.side.add(k);state.side.delete('!'+k)}
     /* v1.6.0: toggle the existing group in place so the accordion can animate; the next full render agrees with state.side */
     const g=grp.closest('.grp');if(g&&g.classList){g.classList.toggle('open',!open);grp.setAttribute('aria-expanded',String(!open));const ch=grp.querySelector&&grp.querySelector('.chev');if(ch)ch.textContent=open?'▾':'▴'}else renderSide();return}
-  if(t.id==='menubtn'){state.sideOpen=!state.sideOpen;t.setAttribute('aria-expanded',String(state.sideOpen));renderSide();return}
+  if(t.id==='menubtn'){state.sideOpen=!state.sideOpen;renderSide();return}
   if((t.closest('#sideTgl')||(t.closest('#side')&&!t.closest('a,button')))&&window.innerWidth>900){state.sideCollapsed=!state.sideCollapsed;store.set('sidecol',state.sideCollapsed);renderSide();announce(state.sideCollapsed?'Sidebar collapsed':'Sidebar expanded');return}
   if(t.id==='avatarBtn'){state.umenu=!state.umenu;renderUmenu();return}
   const ts=t.closest('[data-theme-set]');if(ts){setTheme(ts.dataset.themeSet);return}
@@ -1368,8 +1404,8 @@ document.addEventListener('click',e=>{
   const tg=t.closest('[data-tabgo]');if(tg){state.tab=tg.dataset.tabgo;state.umenu=false;if(location.hash==='#home')render();return}
   if(!t.closest('#umenu')&&!t.closest('#avatarBtn')&&state.umenu){state.umenu=false;renderUmenu()}
   if(!t.closest('.search'))document.getElementById('sres').hidden=true;
-  if(t.closest('#side')&&t.closest('a')&&window.innerWidth<=900){state.sideOpen=false}
-  if(t.id==='resetBtn'){myAreas=new Set();stars=new Set();viewed=[];store.set('my',[]);store.set('stars',[]);store.set('viewed',[]);render();return}
+  if(t.closest('#side')&&t.closest('a')&&window.innerWidth<=900){closeDrawer(false)}
+  if(t.id==='resetBtn'){resetAll();return}
   if(t.closest('[data-pick]')){state.pick=!state.pick;render();return}
   /* v1.6.0: handlers that reorder, add or resize cards render through flipRender so cards glide; a section or tab
      that opens, and an item that expands, carry a one-shot state.anim mark for their enter animation. */
@@ -1403,11 +1439,28 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){document.querySelectorAll('.tl2').forEach(t=>t.classList.add('notips'))}
   if(e.key==='Escape'&&fb.mode){fb.mode=null;fb.rect=null;fbRender();return}
   if(e.key==='Escape'&&location.hash.startsWith('#item-')){closeOv();return}
+  if(e.key==='Escape'&&e.target&&e.target.id==='q'&&e.target.blur&&window.innerWidth<=600)e.target.blur(); /* phone: the open search field collapses back to its icon */
+  if(e.key==='Escape'&&state.umenu){closeUmenu(true);return}
+  if(e.key==='Escape'&&state.sideOpen){closeDrawer(true);return}
+  if((e.key==='ArrowDown'||e.key==='ArrowUp')&&state.umenu)moveInMenu(e);
   const t=e.target;
   if(t.matches&&t.matches('input,textarea,select,[contenteditable]'))return; /* typing j/k/o in a field must not move focus */
   if(e.key==='Enter'&&(t.hasAttribute('data-expand')||t.hasAttribute('data-open'))){t.click()}
   if(e.key==='j'||e.key==='k'){const rows=[...document.querySelectorAll('[data-expand],[data-open]')];const i=rows.indexOf(document.activeElement);const n=e.key==='j'?Math.min(rows.length-1,i+1):Math.max(0,i-1);rows[n]?.focus()}
   if(e.key==='o'&&(t.hasAttribute('data-expand')||t.hasAttribute('data-open'))){location.hash='#item-'+(t.dataset.expand||t.dataset.open)}
+});
+function moveInMenu(e){ /* arrow keys walk the account menu items */
+  const items=[...document.querySelectorAll('#umenu [role="menuitem"]:not([disabled])')];if(!items.length)return;
+  e.preventDefault();const i=items.indexOf(document.activeElement),down=e.key==='ArrowDown';
+  items[i<0?(down?0:items.length-1):(i+(down?1:-1)+items.length)%items.length].focus();
+}
+document.addEventListener('click',e=>{ /* tap outside the open drawer closes it */
+  if(!state.sideOpen)return;const t=e.target;
+  if(t&&t.closest&&!t.closest('#side')&&!t.closest('#menubtn'))closeDrawer(false);
+});
+document.addEventListener('focusout',e=>{ /* tabbing out of the account menu closes it */
+  if(!state.umenu)return;const to=e.relatedTarget,inMenu=n=>n&&n.closest&&(n.closest('#umenu')||n.closest('#avatarBtn'));
+  if(to&&!inMenu(to)&&inMenu(e.target))closeUmenu(false);
 });
 document.addEventListener('mousemove',e=>{const tl=e.target.closest&&e.target.closest('.tl2');if(!tl)return;tl.classList.remove('notips');const r=tl.getBoundingClientRect();const f=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));const t0=+tl.dataset.t0,t1=+tl.dataset.t1;const t=t0+f*(t1-t0);const d=new Date(Math.round(t/86400000)*86400000).toISOString().slice(0,10);const x=(f*100).toFixed(2)+'%';const c=tl.querySelector('.cur'),l=tl.querySelector('.curline');if(c){c.style.left=x;c.textContent=d}if(l)l.style.left=x});
 function showTip(mark,ev){const chart=mark.closest('.chart');const tip=chart&&chart.querySelector('.ctip');if(!tip||!mark.dataset.tip)return;let d;try{d=JSON.parse(mark.dataset.tip)}catch(e){return}
