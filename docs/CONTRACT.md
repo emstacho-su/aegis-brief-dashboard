@@ -24,7 +24,7 @@ Item:
 
 | Field | Type | Notes |
 |---|---|---|
-| `item_id` | string | stable across days; everything keys on it |
+| `item_id` | string | stable across days; everything keys on it; unique within a brief (the worker rejects duplicates) |
 | `kind` | `cve`, `campaign`, `advisory`, `actor`, `research` | |
 | `areas` | string[] | keys of the area taxonomy; non-empty (`other` when unmapped) |
 | `tier` | 1, 2, 3 | |

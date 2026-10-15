@@ -3,6 +3,7 @@
 Routes:
 
 * ``GET /``                    dashboard.html from ``WEB_ROOT`` with ``window.AEGIS_CONFIG`` injected
+* ``GET /config.js``           empty JavaScript (the config is injected inline at ``/``)
 * ``GET /health``              unauthenticated liveness and volume summary
 * ``GET /api/archive``         ``{briefs, index, manifest}``
 * ``GET /api/briefs/{date}``   one brief JSON
@@ -175,6 +176,12 @@ def create_app(
         except FileNotFoundError:
             raise HTTPException(404, "dashboard.html not found in WEB_ROOT", headers=NO_STORE) from None
         return HTMLResponse(inject_config(html, s.public_config()), headers=NO_CACHE)
+
+    @app.get("/config.js")
+    def config_js() -> Response:
+        # The page requests config.js before its main script; the real config is injected
+        # inline at "/", so an empty script avoids a 404 and a MIME-type error.
+        return Response(b"", media_type="application/javascript", headers=NO_CACHE)
 
     @app.api_route("/health", methods=["GET", "HEAD"])
     def health() -> JSONResponse:
