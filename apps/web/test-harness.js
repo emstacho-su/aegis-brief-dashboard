@@ -632,8 +632,8 @@ function fakeSupabase(db) {
       fire(env, 'keydown', { key: ' ', target: plain, preventDefault: () => {} });
       ok(clicks === 2, 'kbd-space: Space on a non-card element clicked it');
 
-      ok(/<button id="sideTgl"[^>]*title="Collapse sidebar"[^>]*><svg/.test(els.get('side').innerHTML), 'side-collapse-mouse: the toggle has no icon or tooltip');
-      ok(/@media \(min-width:901px\)\{[^@]*\.side \.tgl button\{[^}]*position:static/.test(SRC), 'side-collapse-mouse: no rule shows the toggle above 900px');
+      ok(/<button id="sideTgl"[^>]*title="Collapse sidebar"[^>]*>Collapse sidebar<\/button>/.test(els.get('side').innerHTML), 'sidebar toggle: expected a keyboard-only text control, not an arrow icon');
+      ok(!/\.side \.tgl button\{[^}]*position:static/.test(SRC) && /\.side \.tgl button:focus-visible\{[^}]*position:absolute/.test(SRC), 'sidebar toggle: must stay hidden until keyboard-focused and reveal without shifting the layout (no arrow in the sidebar)');
       ok(/\.side \.lnk \.dotc\{[^}]*text-overflow:ellipsis/.test(SRC), 'side-trends-badge-truncate: the link badge is not truncated');
       ok(/@media \(max-width:600px\)\{[^}]*\.tabs\{[^}]*flex-wrap:wrap/.test(SRC), 'home-tabs-overflow-390: tabs do not wrap under 600px');
     }

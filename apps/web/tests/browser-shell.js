@@ -85,16 +85,22 @@ async function checkSidebar(browser) {
   ok(lbl.badge.length > 0, 'no report badge on the Trends link, so the truncation check proves nothing');
   ok(lbl.tx <= 0 && lbl.txw > 30, 'Trends label is squeezed: overflow ' + lbl.tx + ', width ' + lbl.txw);
   ok(lbl.dh < 20 && lbl.over <= 0, 'Trends badge wraps or overflows: height ' + lbl.dh + ', overflow ' + lbl.over);
-  /* side-collapse-mouse: a visible chevron collapses and expands with the mouse */
-  const vis = await page.evaluate(() => { const b = document.getElementById('sideTgl'), r = b.getBoundingClientRect(); return { w: r.width, h: r.height, hit: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === b || b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)) }; });
-  ok(vis.w >= 16 && vis.h >= 16 && vis.hit, 'collapse control is not visible or clickable at 1280: ' + JSON.stringify(vis));
-  await page.click('#sideTgl');
-  ok(await page.evaluate(() => document.getElementById('side').classList.contains('collapsed')), 'mouse click on the chevron did not collapse the sidebar');
-  await page.waitForTimeout(400); /* the grid column animates */
-  const vis2 = await page.evaluate(() => { const r = document.getElementById('sideTgl').getBoundingClientRect(); return r.width >= 16 && r.right <= 56 + 1; });
-  ok(vis2, 'collapsed chevron is not visible inside the 56px rail');
-  await page.click('#sideTgl');
-  ok(!(await page.evaluate(() => document.getElementById('side').classList.contains('collapsed'))), 'mouse click on the chevron did not expand the sidebar');
+  /* no arrow in the sidebar: the collapse control is keyboard-only (visible on focus), the empty sidebar background still toggles with the mouse */
+  const tgl = await page.evaluate(() => { const b = document.getElementById('sideTgl'), r = b.getBoundingClientRect(); return { w: r.width, h: r.height, svg: !!b.querySelector('svg'), text: b.textContent.trim() }; });
+  ok(tgl.w <= 1 && tgl.h <= 1 && !tgl.svg && /sidebar/.test(tgl.text), 'sidebar toggle must be invisible until focused and carry no arrow icon: ' + JSON.stringify(tgl));
+  const bg = await page.evaluate(() => { const s = document.getElementById('side').getBoundingClientRect(); return { x: s.left + s.width / 2, y: s.bottom - 24 }; });
+  await page.mouse.click(bg.x, bg.y);
+  ok(await page.evaluate(() => document.getElementById('side').classList.contains('collapsed')), 'clicking the empty sidebar background did not collapse it');
+  await page.waitForTimeout(400);
+  await page.mouse.click(28, bg.y);
+  ok(!(await page.evaluate(() => document.getElementById('side').classList.contains('collapsed'))), 'clicking the collapsed rail did not expand it');
+  await page.focus('#sideTgl');
+  const shown = await page.evaluate(() => { const r = document.getElementById('sideTgl').getBoundingClientRect(); return r.width > 20 && r.height > 10; });
+  ok(shown, 'keyboard focus does not reveal the sidebar toggle');
+  await page.keyboard.press('Enter');
+  ok(await page.evaluate(() => document.getElementById('side').classList.contains('collapsed')), 'Enter on the focused toggle did not collapse the sidebar');
+  await page.focus('#sideTgl'); await page.keyboard.press('Enter');
+  ok(!(await page.evaluate(() => document.getElementById('side').classList.contains('collapsed'))), 'Enter on the focused toggle did not expand the sidebar');
   /* side-group-persist: a manually opened group is still open after a reload */
   await page.goto(URL + '#home'); await page.waitForSelector('#main h1');
   const open = () => page.getAttribute('[data-grp="areas"]', 'aria-expanded');
