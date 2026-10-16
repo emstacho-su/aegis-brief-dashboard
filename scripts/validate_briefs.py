@@ -15,6 +15,8 @@ import re
 import sys
 from pathlib import Path
 
+from collections import Counter
+
 import jsonschema
 
 REPO = Path(__file__).resolve().parent.parent
@@ -27,6 +29,18 @@ def targets(args: list[str]) -> list[Path]:
     for p in paths:
         out.extend(sorted(p.glob("*.json")) if p.is_dir() else [p])
     return out
+
+
+def duplicate_ids(data: object) -> list[str]:
+    """Report repeated items[].item_id values (the schema cannot express uniqueness)."""
+    items = data.get("items") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        return []
+    # Same rule as aegis_worker.schema.duplicate_item_id_problems (kept separate so this script needs only
+    # jsonschema); keep the two in step when the rule changes.
+    ids = [i.get("item_id") for i in items if isinstance(i, dict) and isinstance(i.get("item_id"), str)]
+    counts = Counter(ids)
+    return [f"items: duplicate item_id {x!r}" for x, n in counts.items() if n > 1]
 
 
 def main() -> int:
@@ -45,6 +59,7 @@ def main() -> int:
             failed += 1
             continue
         errs = [f"{'/'.join(map(str, e.path)) or '(root)'}: {e.message}" for e in validator.iter_errors(data)]
+        errs.extend(duplicate_ids(data))
         if isinstance(data, dict) and DATE_RE.match(f.stem) and data.get("date") != f.stem:
             errs.append(f"date {data.get('date')!r} does not match file name")
         if errs:

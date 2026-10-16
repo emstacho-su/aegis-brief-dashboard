@@ -176,44 +176,6 @@
    "body": "Exploitation status: no exploitation observed. New this cycle. This analysis text is synthetic."
   },
   {
-   "item_id": "item-d9ca0da4",
-   "kind": "cve",
-   "areas": [
-    "other"
-   ],
-   "tier": 2,
-   "priority": "high",
-   "status": "new",
-   "continued_days": 0,
-   "score": 70,
-   "score_parts": {},
-   "tlp": "amber_strict",
-   "first_seen": "2026-09-24",
-   "confidence": "",
-   "identifiers": [
-    "CVE-2026-92773"
-   ],
-   "title": "Dovetail Device Manager: command injection in a management endpoint",
-   "description": "Dovetail Device Manager is affected by command injection in a management endpoint. Status: scanning activity rising. Fictional advisory text generated for a shareable sample; the shape mirrors a real brief item without any real product, vendor or institution.",
-   "source": {
-    "name": "Vendor advisory",
-    "url": "",
-    "retrieved": "2026-09-24"
-   },
-   "su_impact": "",
-   "recommended_actions": [],
-   "escalation": {
-    "required": false,
-    "to": "",
-    "note": ""
-   },
-   "cve_published": null,
-   "attack": [],
-   "indicators": [],
-   "delta": "New this cycle.",
-   "body": "Exploitation status: scanning activity rising. New this cycle. This analysis text is synthetic."
-  },
-  {
    "item_id": "item-373bf9db",
    "kind": "campaign",
    "areas": [

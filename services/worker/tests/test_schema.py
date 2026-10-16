@@ -54,3 +54,14 @@ def test_defaults_match_web_normalization(samples):
     b = parse_brief(data)
     assert b.outstanding == [] and b.banners == []
     assert b.items[0].indicators == [] and b.items[0].score_parts == {}
+
+
+def test_duplicate_item_id_rejected_and_named(samples):
+    bad = samples["2026-09-29"]
+    dup = bad["items"][0]["item_id"]
+    bad["items"][2]["item_id"] = dup
+    with pytest.raises(BriefValidationError) as ei:
+        validate_brief(bad)
+    msg = str(ei.value)
+    assert dup in msg and "duplicate" in msg
+    assert "[0]" in msg and "[2]" in msg

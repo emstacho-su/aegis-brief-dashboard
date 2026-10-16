@@ -1,0 +1,1 @@
+[{"op":"goto","url":"#home"},{"op":"text","sel":"#ribbon"},{"op":"shot","file":"smoke/home-dark.png"},{"op":"theme","scheme":"light"},{"op":"shot","file":"smoke/home-light-system.png"},{"op":"viewport","w":390,"h":844},{"op":"shot","file":"smoke/home-phone.png"},{"op":"count","sel":".acard"},{"op":"aria","sel":"#side","max":400}]

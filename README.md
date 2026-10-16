@@ -65,6 +65,7 @@ Full steps, including auth and feedback flow per mode: `docs/DEPLOY.md`.
 | `data/briefs/` | 22 fictional sample briefs. | contract |
 | `supabase/` | Migration, fallback seed script, setup notes. | platform |
 | `scripts/` | `dev.sh`, `replay.sh`, `new_brief.py`, `build_static.py`, CI helpers. | platform |
+| `scripts/ux-audit/` | `drive.js`, a Playwright step runner for driving a running dashboard and re-auditing it (its own README). | web |
 | `docker-compose.yml` | `dashboard` service and the `replay` profile. | platform |
 | `vercel.json` | Static hosting of `apps/web`. | platform |
 | `.github/workflows/ci.yml` | Tests, schema check, image build and smoke test, web syntax check. | platform |

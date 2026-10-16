@@ -56,16 +56,34 @@ def _where(path: Any) -> str:
     return "$" + parts
 
 
+def duplicate_item_id_problems(data: Any) -> list[str]:
+    """Describe every ``items[].item_id`` that repeats; JSON Schema cannot express this."""
+    items = data.get("items") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        return []
+    positions: dict[str, list[int]] = {}
+    for idx, item in enumerate(items):
+        item_id = item.get("item_id") if isinstance(item, dict) else None
+        if isinstance(item_id, str):
+            positions.setdefault(item_id, []).append(idx)
+    return [
+        f"$.items: duplicate item_id {item_id!r} at positions " + ", ".join(f"[{i}]" for i in at)
+        for item_id, at in positions.items()
+        if len(at) > 1
+    ]
+
+
 def validate_brief(data: Any) -> None:
     """Validate ``data`` against the brief schema; raise BriefValidationError on failure.
 
     Beyond the schema, the top-level ``date`` must be a real calendar date, because it
-    becomes a directory name in the volume.
+    becomes a directory name in the volume, and ``items[].item_id`` must be unique.
     """
     errors = sorted(validator().iter_errors(data), key=lambda e: (list(map(str, e.absolute_path)), e.message))
     problems = [f"{_where(e.absolute_path)}: {e.message}" for e in errors]
     if isinstance(data, dict) and isinstance(data.get("date"), str) and not is_valid_date(data["date"]):
         problems.append(f"$.date: {data['date']!r} is not a valid calendar date")
+    problems.extend(duplicate_item_id_problems(data))
     if problems:
         raise BriefValidationError(problems[:MAX_PROBLEMS], len(problems))
 

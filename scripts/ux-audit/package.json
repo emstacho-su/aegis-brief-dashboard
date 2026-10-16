@@ -1,0 +1,12 @@
+{
+  "name": "aegis-ux-audit",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Drive the AEGIS brief dashboard in a real browser from a JSON list of steps (see README.md)",
+  "scripts": {
+    "smoke": "node drive.js steps/smoke.json --base http://127.0.0.1:8080 --out results/smoke.json"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
+}
