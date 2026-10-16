@@ -662,7 +662,7 @@ function fakeSupabase(db) {
     };
     const bigEnv = await sweep('trends/container', { config: { apiBase: '', mode: 'container' }, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify(briefs)), manifest: { retained: Object.keys(briefs) } }) }) });
     const firstKey = Object.keys(briefs)[0];
-    await sweep('trends/single', { config: { apiBase: '' }, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify({ [firstKey]: briefs[firstKey] })) }) }) });
+    const singleEnv = await sweep('trends/single', { config: { apiBase: '' }, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify({ [firstKey]: briefs[firstKey] })) }) }) });
 
     const env = bigEnv;
     /* catalog "New items" tile and the New vs dropped report share one definition */
@@ -711,6 +711,88 @@ function fakeSupabase(db) {
     /* quiet tooltip wording */
     env.ctx.location.hash = '#trends-quiet'; env.run('state.sel=null;render()');
     ok(/days since Tier 1/.test(env.main().innerHTML), 'quiet tooltip does not say "days since Tier 1"');
+    /* --- second audit pass --- */
+    const NOPREV = 'no previous period in the archive';
+    const countOf = (html, re) => (html.match(re) || []).length;
+    const goto = (hash, code) => { env.ctx.location.hash = hash; env.run((code ? code + ';' : '') + 'render()'); return env.main().innerHTML; };
+    const goto2 = (e, hash) => { e.ctx.location.hash = hash; e.run('state.f.period=30;state.sel=null;render()'); return e.main().innerHTML; };
+    const RESET = 'state.sel=null;state.selAll=null;state.f.tarea=null;state.f.period=30';
+    /* summary tiles: the "no previous period" note appears once, and the tile row is a balanced grid */
+    const cat30 = goto('#trends', RESET);
+    ok(countOf(cat30, new RegExp(NOPREV, 'g')) === 1, `catalog at period 30 repeats "${NOPREV}" ${countOf(cat30, new RegExp(NOPREV, 'g'))} times`);
+    const kc = cat30.match(/class="kpis"[^>]*--kc:(\d+)/), tiles = countOf(cat30, /<div class="kpi">/g);
+    ok(kc && tiles % Number(kc[1]) === 0 && Number(kc[1]) <= 5, `summary tiles (${tiles}) are not a balanced grid (columns ${kc && kc[1]})`);
+    ['newres', 'recentnew', 't1cal'].forEach(id => { const h = goto('#trends-' + id, RESET); ok(countOf(h, new RegExp(NOPREV, 'g')) <= 1, `${id} repeats the no-previous-period note per tile`); });
+    /* exposure age: a day with no day counts is a gap, not 0.0, and the series names agree */
+    const real = env.run('HAS_REAL');
+    const noCountDays = env.run("DATES.filter(d=>!BRIEFS[d].exposure||!BRIEFS[d].exposure.some(r=>r.days!=null&&r.state!=='mitigated'))");
+    const avg = goto('#trends-avgage', RESET);
+    if (real) {
+      ok(noCountDays.length > 0, 'fixture has no day without exposure day counts, avgage gap test is vacuous');
+      noCountDays.forEach(d => {
+        const row = (avg.match(new RegExp('<tr><td>' + d + '</td>(.*?)</tr>')) || [])[1] || '';
+        ok(row && !/>0\.0</.test(row) && /<td>–<\/td>/.test(row), `avgage table shows ${/>0\.0</.test(row) ? '0.0' : 'no dash'} for ${d}`);
+        const tip = avg.match(new RegExp('data-day="' + d + '"[^>]*data-tip="([^"]*)"'));
+        ok(tip && /no day counts/.test(tip[1]), `avgage tooltip for ${d} does not say the day has no day counts`);
+      });
+      ok(/class="gap-pt"/.test(avg), 'avgage chart has no gap marker for the missing day');
+    }
+    const names = real ? ['Avg item age', 'Avg exposure age'] : ['Avg item age', 'Avg action age'];
+    const legend = (avg.match(/<div class="legend">(.*?)<\/div>/) || [])[1] || '', thead = (avg.match(/<thead>(.*?)<\/thead>/) || [])[1] || '';
+    names.forEach(n => {
+      ok(legend.includes(n), `avgage legend lacks series name "${n}"`);
+      ok(thead.includes('>' + n + '<'), `avgage table lacks series name "${n}"`);
+      ok(avg.includes('&quot;l&quot;:&quot;' + n + '&quot;'), `avgage tooltip lacks series name "${n}"`);
+    });
+    ok(!real || !/Actions<\/th>/.test(thead), 'avgage table still has an "Actions" column for the exposure register');
+    /* Tier 1 calendar: one gap marker per calendar gap, tooltips on cells; movers rows too */
+    [30, 14, 7].forEach(p => {
+      const h = goto('#trends-t1cal', RESET + ';state.f.period=' + p);
+      const want = env.run("periodDays().filter((d,i)=>i&&(Date.parse(d)-Date.parse(periodDays()[i-1]))/864e5>1).length");
+      ok(countOf(h, /<g class="gap"/g) === want, `t1cal period ${p}: ${countOf(h, /<g class="gap"/g)} gap markers for ${want} calendar gaps`);
+      if (p === 30) { ok(/6 days without a brief/.test(h), 't1cal gap marker lacks the "6 days without a brief" title'); ok(/1 day without a brief/.test(h), 't1cal gap marker lacks the singular title'); }
+      const cells = countOf(h, /<g class="clk[^"]*" data-day=/g), tipped = countOf(h, /<g class="clk[^"]*" data-day="[^"]*"[^>]*data-tip="/g);
+      ok(cells > 0 && tipped === cells, `t1cal period ${p}: only ${tipped} of ${cells} cells carry data-tip`);
+      ok(/<div class="ctip">/.test(h), 't1cal has no tooltip container');
+    });
+    const mv = goto('#trends-movers', RESET), mrows = countOf(mv, /<g class="clk[^"]*" data-key=/g);
+    ok(mrows > 0 && countOf(mv, /<g class="clk[^"]*" data-key="[^"]*"[^>]*data-tip="/g) === mrows && /<div class="ctip">/.test(mv), `movers: ${countOf(mv, /data-tip="/g)} tooltips for ${mrows} rows`);
+    /* selection list is capped at 40 cards with a Show all button */
+    goto('#trends-byarea', RESET);
+    const big = env.run("Object.keys(AREAS).map(k=>[k,Object.values(IDX.life).filter(x=>x.areas.includes(k)&&x.days.some(dd=>periodDays().includes(dd))).length]).sort((a,b)=>b[1]-a[1])[0]");
+    const capped = goto('#trends-byarea', `state.sel=${JSON.stringify(big[0])};state.selAll=null`);
+    ok(big[1] > 40, `fixture has no area with more than 40 items (${big[1]})`);
+    ok(countOf(capped, /<article class="item/g) === 40, `selection renders ${countOf(capped, /<article class="item/g)} cards, expected 40`);
+    ok(new RegExp(`data-selall[^>]*>Show all ${big[1]}<`).test(capped) && new RegExp(`Showing 40 of ${big[1]} matching items`).test(capped), 'selection lacks the Show all button or the "Showing 40 of N" count');
+    const full = goto('#trends-byarea', 'state.selAll=state.sel');
+    ok(countOf(full, /<article class="item/g) === big[1] && !/data-selall/.test(full), `Show all renders ${countOf(full, /<article class="item/g)} cards, expected ${big[1]}`);
+    goto('#trends-byarea', RESET);
+    /* every report with clickable marks says what a click does */
+    ['newres', 'avgage', 'byarea', 'recentnew', 'restime', 't1cal', 'movers', 'sources', 'actionsage', 'quiet', 'cve'].forEach(id => {
+      const h = goto('#trends-' + id, RESET), lg = (h.match(/<div class="legend">(.*?)<\/div>/g) || []).join(' ') + (id === 'cve' ? h : '');
+      ok(/click an? (bar|day|column|cell|row|point) to /.test(lg), `${id}: no click hint in the legend`);
+    });
+    ['byarea', 'quiet'].forEach(id => ok(/double-click to open the area/.test(goto('#trends-' + id, RESET)), `${id}: no double-click hint`));
+    /* charts sit in a scroll wrapper with a cue; CVE columns are classed for phones */
+    ['newres', 'byarea', 't1cal', 'movers'].forEach(id => { const h = goto('#trends-' + id, RESET); ok(/class="cscroll"/.test(h) && /class="scrollcue"/.test(h), `${id}: chart is not wrapped in .cscroll with a scroll cue`); });
+    const cve = goto('#trends-cve', RESET);
+    ok(countOf(cve, /<th class="hm"/g) >= 3 && /<td class="cvet" title="/.test(cve) && /<td class="mono nw"/.test(cve), 'cve table lacks the phone column classes or title attributes');
+    ok(/The first archived brief counts every item as new./.test(goto('#trends-newres', RESET)), 'newres lacks the first-brief footnote');
+    /* a lone source keeps its full name on the axis */
+    ok(/>Vendor advisory</.test(goto('#trends-sources', RESET)), 'sources axis truncates the only source label');
+    /* catalog thumbnails come from the archive */
+    const thumbs = html => [...html.matchAll(/<div class="th">(.*?)<\/div>/g)].map(m => [...m[1].matchAll(/height:([^p]*)px/g)].map(x => x[1]));
+    const tb = thumbs(goto('#trends', RESET)), ts = thumbs(goto2(singleEnv, '#trends'));
+    ok(tb.length === 11 && tb.every(a => a.length >= 2 && a.length <= 10 && a.every(v => /^\d+(\.\d+)?$/.test(v))), 'catalog thumbnails are missing, too long or contain NaN');
+    ok(tb.filter(a => new Set(a).size > 1).length >= 9, 'catalog thumbnails are flat; they should follow the data');
+    const idxs = env.run('REPORTS.map(r=>r.id)');
+    ['newres', 't1cal'].forEach(id => {
+      const counts = env.run(id === 'newres' ? "DATES.slice(-10).map(d=>IDX.events.filter(e=>e.date===d&&e.type==='new').length)" : "DATES.slice(-10).map(d=>BRIEFS[d].items.filter(i=>i.tier===1).length)");
+      const h = tb[idxs.indexOf(id)].map(Number);
+      ok(counts.length === h.length && counts.every((c, i) => (c === Math.max(...counts)) === (h[i] === Math.max(...h)) && (c === 0) === (h[i] === 0)), `${id} thumbnail does not follow its archive series ${counts} vs ${h}`);
+    });
+    ['newres', 'avgage', 'recentnew', 't1cal', 'cve'].forEach(id => ok(new Set(ts[idxs.indexOf(id)]).size === 1, `${id} thumbnail with one brief is not a flat line`));
+    ok(ts.every(a => a.every(v => /^\d+(\.\d+)?$/.test(v))), 'single-brief thumbnails contain NaN');
     console.log('6. trends          every report x 7/14/30 NaN-free in container and single-brief data, counts agree, short labels, controls, filter isolation');
   }
   /* --- end regressions: trends --- */
