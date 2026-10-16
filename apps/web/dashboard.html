@@ -248,7 +248,7 @@ h1,h2,h3{text-wrap:balance}
 .spark .fill{fill:rgba(138,143,154,.15);stroke:none}
 
 /* Tabs */
-.tabs{display:flex;gap:.1rem;border-bottom:1px solid var(--border);margin-bottom:.6rem;overflow-x:auto}
+.tabs{position:relative;display:flex;gap:.1rem;border-bottom:1px solid var(--border);margin-bottom:.6rem;overflow-x:auto} /* relative: the badge separators are absolutely positioned and must stay inside the scroller */
 .collh{cursor:pointer;border-radius:var(--radius-md);transition:background .15s}
 .collh:hover{background:var(--bg-hover)}
 .collh.is-collapsed{box-shadow:inset 3px 0 0 var(--accent)}
