@@ -446,6 +446,7 @@ tr.rowlink{cursor:pointer}tr.rowlink td:first-child,tr.rowlink td a{white-space:
 .ov{position:fixed;inset:0;background:var(--overlay);z-index:50;overflow-y:auto;padding:4vh max(16px,env(safe-area-inset-right,0px)) 4vh max(16px,env(safe-area-inset-left,0px))}
 .panel{max-width:960px;margin:0 auto;background:var(--bg-primary);border:1px solid var(--border-hover);border-top:3px solid var(--accent);border-radius:var(--radius-lg);padding:1.1rem 1.25rem 1.25rem;position:relative;min-width:0}
 .panel .close{position:absolute;top:.6rem;right:.7rem;font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.15rem .5rem}
+.panel .crumb{padding-right:4.5rem} /* the close button is absolute in the top-right corner; a wrapping crumb must not run under it */
 .panel .close:hover{color:var(--accent);border-color:var(--accent)}
 .pph{display:flex;gap:1rem;align-items:flex-start;margin-bottom:.8rem;padding-right:3rem}
 .pph .tb{flex:1;min-width:0}
