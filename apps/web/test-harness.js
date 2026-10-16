@@ -705,7 +705,9 @@ function fakeSupabase(db) {
     run('render()');
     ok(run('state.f.tier') === 3, 'brief-item: filters cleared by a same-date re-render');
     go('#brief-' + run('DATES[DATES.length-2]'));
-    ok(run('state.f.tier') === null && run('state.f.status') === null && run('state.f.area') === null, 'brief-item: filters carried to another date');
+    /* tier and status belong to one date's list and reset; the area filter is shared with the Home stream and stays */
+    ok(run('state.f.tier') === null && run('state.f.status') === null, 'brief-item: tier/status filters carried to another date');
+    ok(run('state.f.area') === 'perimeter', 'brief-item: the shared area filter was cleared by a date change');
     /* direct #item- load paints the page beneath the overlay */
     run("document.getElementById('main').innerHTML=''");
     go('#item-' + multi);
