@@ -76,6 +76,7 @@ h1,h2,h3{text-wrap:balance}
 .sres .r .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sres .r .m{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);white-space:nowrap}
 .sres .none{padding:.6rem .75rem;color:var(--text-muted);font-size:12px}
+.sres .r.on,.sres .r[aria-selected="true"]{background:var(--bg-secondary)}
 .plus{width:32px;height:32px;border-radius:50%;border:1px solid var(--border-hover);color:var(--text-primary);display:grid;place-items:center;font-size:18px;line-height:1;cursor:pointer;background:var(--bg-primary)}
 .plus:hover{border-color:var(--accent);color:var(--accent)}
 .fbov{position:fixed;inset:0;z-index:70;cursor:crosshair;background:var(--overlay);opacity:.45}
@@ -343,7 +344,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);font-weight:500;padding:.4rem .6rem;border-bottom:1px solid var(--border);white-space:nowrap}
 td{padding:.42rem .6rem;border-bottom:1px solid var(--border-muted);vertical-align:top}
 tr:last-child td{border-bottom:0}
-tr.rowlink{cursor:pointer}tr.rowlink:hover td{background:var(--bg-secondary)}
+tr.rowlink{cursor:pointer}tr.rowlink td:first-child,tr.rowlink td a{white-space:nowrap}tr.rowlink:hover td{background:var(--bg-secondary)}
 .tw{overflow-x:auto;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg)}
 .age{font-family:var(--font-mono);font-weight:500}.age.old{color:var(--down)}
 
@@ -1131,7 +1132,7 @@ function renderTrends(){
 function renderArchive(){
   const stored=MODE==='container'; /* the worker keeps a deterministic render of every retained brief */
   return `<div class="crumb"><a href="#home">Your work</a><span>›</span><span>Archive</span></div><div class="ph"><div><h1>Archive</h1><span class="sub">The rotating 30-day volume, newest first.</span></div></div>
-  <div class="tw"><table><thead><tr><th>Date</th><th>Items</th><th>Tier 1</th><th>New</th><th>Dropped</th><th>Esc</th><th>Open actions</th><th>Avg age</th><th>Valid</th>${stored?'<th>Stored page</th>':''}</tr></thead><tbody>${[...IDX.daily].reverse().map(d=>`<tr class="rowlink" data-nav="#brief-${d.date}"><td class="mono">${d.date}${d.date===TODAY_S?' <span class="pill new">Today</span>':''}</td><td class="num">${d.items}</td><td class="num" style="color:${d.t1?'var(--sev-critical)':'inherit'}">${d.t1}</td><td class="num">${d.new}</td><td class="num">${d.dropped}</td><td class="num">${d.esc}</td><td class="num">${d.actions}</td><td class="num mono">${d.avgAge.toFixed(1)}d</td><td>${d.valid?'<span style="color:var(--ok)">✓</span>':'<span style="color:var(--down)">✗</span>'}</td>${stored?`<td><a href="${esc(apiBase()+'/briefs/'+encodeURIComponent(d.date)+'.html')}" target="_blank" rel="noopener" aria-label="Open stored page for ${esc(d.date)} (opens in a new tab)">Open stored page</a></td>`:''}</tr>`).join('')}</tbody></table></div>`;
+  <div class="tw"><table><thead><tr><th>Date</th><th>Items</th><th>Tier 1</th><th>New</th><th>Dropped</th><th>Esc</th><th>Open actions</th><th>Avg age</th><th>Valid</th>${stored?'<th>Stored page</th>':''}</tr></thead><tbody>${[...IDX.daily].reverse().map(d=>`<tr class="rowlink" data-nav="#brief-${d.date}" tabindex="0" role="link" aria-label="Open brief ${esc(d.date)}"><td class="mono">${d.date}${d.date===TODAY_S?' <span class="pill new">Today</span>':''}</td><td class="num">${d.items}</td><td class="num" style="color:${d.t1?'var(--sev-critical)':'inherit'}">${d.t1}</td><td class="num">${d.new}</td><td class="num">${d.dropped}</td><td class="num">${d.esc}</td><td class="num">${d.actions}</td><td class="num mono">${d.avgAge.toFixed(1)}d</td><td>${d.valid?'<span style="color:var(--ok)">✓</span>':'<span style="color:var(--down)">✗</span>'}</td>${stored?`<td><a href="${esc(apiBase()+'/briefs/'+encodeURIComponent(d.date)+'.html')}" target="_blank" rel="noopener" aria-label="Open stored page for ${esc(d.date)} (opens in a new tab)">Open stored page</a></td>`:''}</tr>`).join('')}</tbody></table></div>`;
 }
 
 /* ---- Popout ---- */
@@ -1248,30 +1249,33 @@ function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.
     <div class="sep"></div><button data-fblist role="menuitem">Feedback captured<span class="c">${fb.list.length}</span></button><button id="resetBtn" role="menuitem">Reset everything saved in this browser</button>
     <div class="sep"></div>${last}`}
 /* ---- Feedback capture: drag a region, DOM capture via html2canvas, describe, save locally ---- */
-let fb={mode:null,sx:0,sy:0,rect:null,shot:null,list:store.get('feedback',[]),toast:null};
+let fb={mode:null,sx:0,sy:0,rect:null,shot:null,skipped:false,capturing:false,list:store.get('feedback',[]),toast:null};
+function fmtWhen(iso){const d=new Date(iso);if(isNaN(d.getTime()))return String(iso);try{return d.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}catch(e){return String(iso)}}
+function fbNoShotMsg(){if(fb.capturing)return 'Capturing the screenshot…';if(fb.skipped)return 'No screenshot attached. The description still saves.';return typeof html2canvas==='function'?'The screenshot could not be captured. The description still saves.':'Screenshot unavailable (capture library not loaded). The description still saves.'}
 function fbRender(){const root=document.getElementById('fbroot');if(!root)return;
   if(fb.mode==='select')root.innerHTML=`<div class="fbhint" role="dialog" aria-label="Capture a bug"><b>Drag a box around the bug</b><span>Release to capture it. Press Esc to cancel.</span><div style="margin-top:.4rem;display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap"><button class="btn sm" data-fbviewport>Capture the visible screen instead</button><button class="btn sm" data-fbskip>Skip the screenshot</button></div></div><div class="fbov" id="fbov"></div><div class="fbrect" id="fbrect" style="display:none"></div>`;
-  else if(fb.mode==='form')root.innerHTML=`<div class="fbpanel"><div class="panel" role="dialog" aria-modal="true" aria-label="Report feedback"><button class="close" data-fbclose>close ✕</button><h2 style="margin:0 0 .6rem;font-size:16px">Report a bug or request a change</h2>
-      ${fb.shot?`<img src="${fb.shot}" alt="Captured region">`:'<div class="empty">Screenshot unavailable (capture library not loaded). The description still saves.</div>'}
+  else if(fb.mode==='form')root.innerHTML=`<div class="fbpanel"><div class="panel" role="dialog" aria-modal="true" aria-label="Report feedback"><button class="close" data-fbclose>close ✕</button><h2 style="margin:0 0 .6rem;font-size:16px;padding-right:4.5rem">Report a bug or request a change</h2>
+      ${fb.shot?`<img src="${fb.shot}" alt="Captured region">`:`<div class="empty">${esc(fbNoShotMsg())}</div>`}
       <label for="fb1">What is the bug, or what is wrong here?</label><textarea id="fb1"></textarea>
       <label for="fb2">What would you like changed?</label><textarea id="fb2"></textarea>
       <label for="fb3">Your name (optional)</label><input id="fb3" type="text">
       <div class="row"><button class="btn primary" data-fbsave>Save feedback</button><button class="btn" data-fbretake>Retake</button><span class="muted" style="font-size:12px">${SB&&userId()?'Saves to the team store and this browser':'Saved in this browser for now'} · page ${esc(location.hash||'#home')}</span></div></div></div>`;
-  else if(fb.mode==='list')root.innerHTML=`<div class="fbpanel"><div class="panel" role="dialog" aria-modal="true" aria-label="Feedback"><button class="close" data-fbclose>close ✕</button><h2 style="margin:0 0 .3rem;font-size:16px">Feedback captured in this browser <span class="muted mono" style="font-size:12px">(${fb.list.length})</span></h2><p class="muted" style="margin:0 0 .5rem;font-size:12px">Copy the JSON and send it to Stack until a shared store exists.</p>
+  else if(fb.mode==='list')root.innerHTML=`<div class="fbpanel"><div class="panel" role="dialog" aria-modal="true" aria-label="Feedback"><button class="close" data-fbclose>close ✕</button><h2 style="margin:0 0 .3rem;font-size:16px;padding-right:4.5rem">Feedback captured in this browser <span class="muted mono" style="font-size:12px;display:block">(${fb.list.length})</span></h2><p class="muted" style="margin:0 0 .5rem;font-size:12px">Copy the JSON and send it to Stack until a shared store exists.</p>
       <div class="row" style="margin:0 0 .5rem"><button class="btn" data-fbcopy>Copy all as JSON</button><button class="btn" data-fbclear>Clear all</button></div>
-      ${fb.list.length?fb.list.map((f,i)=>`<div class="fbitem">${f.shot?`<img src="${f.shot}" alt="">`:'<div class="empty">no image</div>'}<div><div class="m">${esc(f.at)} · ${esc(f.page)}${f.who?' · '+esc(f.who):''}${f.remote==='saved'?' · in team store':f.remote==='error'?' · team store save failed':''}</div><div><b>Bug:</b> ${esc(f.bug)}</div><div><b>Change:</b> ${esc(f.change)}</div><button class="btn sm" data-fbdel="${i}" style="margin-top:.3rem">Delete</button></div></div>`).join(''):'<div class="empty">Nothing captured yet. Use the + in the top bar.</div>'}</div></div>`;
+      ${fb.list.length?fb.list.map((f,i)=>`<div class="fbitem">${f.shot?`<img src="${f.shot}" alt="">`:'<div class="empty">no image</div>'}<div><div class="m"><span title="${esc(f.at)}">${esc(fmtWhen(f.at))}</span> · ${esc(f.page)}${f.who?' · '+esc(f.who):''}${f.remote==='saved'?' · in team store':f.remote==='error'?' · team store save failed':''}</div><div><b>Bug:</b> ${esc(f.bug)}</div><div><b>Change:</b> ${esc(f.change)}</div><button class="btn sm" data-fbdel="${i}" style="margin-top:.3rem">Delete</button></div></div>`).join(''):'<div class="empty">Nothing captured yet. Use the + in the top bar.</div>'}</div></div>`;
   else root.innerHTML=fb.toast?`<div class="fbtoast ${fb.toast.cls||''}${fb.toast.leaving?' leaving':''}"><span>${esc(fb.toast.msg)}</span><button class="btn sm" data-toastx>Dismiss</button></div>`:'';
 }
-function fbStart(){fb.mode='select';fb.rect=null;fb.shot=null;fbRender();const b=document.querySelector('[data-fbviewport]');if(b)b.focus()}
+function fbSkip(){fb.mode='form';fb.shot=null;fb.skipped=true;fb.capturing=false;fbRender();const f=document.getElementById('fb1');if(f)f.focus()}
+function fbStart(){fb.mode='select';fb.rect=null;fb.shot=null;fb.skipped=false;fb.capturing=false;fbRender();const b=document.querySelector('[data-fbviewport]');if(b)b.focus()}
 async function fbCapture(r){
-  fb.mode='form';fb.shot=null;fbRender();{const f=document.getElementById('fb1');if(f)f.focus()}
+  fb.mode='form';fb.shot=null;fb.skipped=false;fb.capturing=typeof html2canvas==='function';fbRender();{const f=document.getElementById('fb1');if(f)f.focus()}
   if(typeof html2canvas!=='function')return;
   try{const docEl=document.documentElement;const bg=getComputedStyle(docEl).getPropertyValue('--bg-canvas').trim()||'#111217';const full=await html2canvas(docEl,{backgroundColor:bg,scale:1,logging:false,useCORS:true,windowWidth:docEl.clientWidth,ignoreElements:el=>el.id==='fbroot'||(el.closest&&el.closest('#fbroot'))});
-    const c=document.createElement('canvas');c.width=r.w;c.height=r.h;c.getContext('2d').drawImage(full,r.x,r.y,r.w,r.h,0,0,r.w,r.h);fb.shot=c.toDataURL('image/jpeg',.8);fbRender()}catch(e){fb.shot=null;fbRender()}
+    const c=document.createElement('canvas');c.width=r.w;c.height=r.h;c.getContext('2d').drawImage(full,r.x,r.y,r.w,r.h,0,0,r.w,r.h);fb.shot=c.toDataURL('image/jpeg',.8);fb.capturing=false;fbRender()}catch(e){fb.shot=null;fb.capturing=false;fbRender()}
 }
 function fbSave(){const bug=(document.getElementById('fb1')||{}).value||'',change=(document.getElementById('fb2')||{}).value||'',who=(document.getElementById('fb3')||{}).value||'';
   const entry={at:new Date().toISOString(),page:location.hash||'#home',bug,change,who,shot:fb.shot};
-  fb.list.push(entry);store.set('feedback',fb.list);fb.mode=null;fbRender();renderUmenu();announce('Feedback saved. '+fb.list.length+' captured in this browser.');
+  fb.list.push(entry);store.set('feedback',fb.list);fb.mode=null;fbRender();renderUmenu();setToast(`Feedback saved (${fb.list.length} in this browser)`,'ok',FB_SAVED_TOAST_MS);
   if(SB&&userId())fbRemote(entry);}
 document.addEventListener('mousedown',e=>{if(e.target.id!=='fbov')return;fb.sx=e.clientX;fb.sy=e.clientY;const r=document.getElementById('fbrect');r.style.display='block';r.style.left=fb.sx+'px';r.style.top=fb.sy+'px';r.style.width='0px';r.style.height='0px';fb.rect={dragging:true}});
 document.addEventListener('mousemove',e=>{if(!fb.rect||!fb.rect.dragging)return;const r=document.getElementById('fbrect');if(!r)return;const x=Math.min(e.clientX,fb.sx),y=Math.min(e.clientY,fb.sy),w=Math.abs(e.clientX-fb.sx),h=Math.abs(e.clientY-fb.sy);r.style.left=x+'px';r.style.top=y+'px';r.style.width=w+'px';r.style.height=h+'px'});
@@ -1282,9 +1286,32 @@ function setTheme(v){try{if(v==='system')localStorage.removeItem('aegis4-theme')
   const de=document.documentElement;if(de&&de.classList&&!reducedMotion()){clearTimeout(themeTimer);de.classList.add('theming');themeTimer=setTimeout(()=>de.classList.remove('theming'),300)} /* v1.6.0: cross-fade the surfaces; a second click restarts the window */
   if(v==='system')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',v);renderUmenu();announce('Theme set to '+v);scheduleSettingsSync()}
 function curTheme(){try{return localStorage.getItem('aegis4-theme')||'system'}catch(e){return 'system'}}
-function searchItems(q){q=q.trim().toLowerCase();if(q.length<2)return [];return Object.values(IDX.life).filter(L=>L.title.toLowerCase().includes(q)||L.identifiers.some(x=>x.toLowerCase().includes(q))).sort((p,q2)=>q2.last_seen.localeCompare(p.last_seen)||q2.maxScore-p.maxScore).slice(0,8)}
-function renderSearch(){const q=document.getElementById('q');const box=document.getElementById('sres');if(!BOOTED){if(box)box.hidden=true;return}if(!q||!document.activeElement||document.activeElement!==q||q.value.trim().length<2){box.hidden=true;return}
-  const r=searchItems(q.value);box.hidden=false;box.innerHTML=r.length?r.map(L=>`<div class="r" data-open="${esc(L.id)}"><span class="t">${esc(L.title)}</span><span class="m">${L.identifiers[0]?esc(L.identifiers[0])+' · ':''}${L.last_seen===TODAY_S?'today':esc(L.last_seen)}${L.maxTier===1?' · T1':''}</span></div>`).join(''):'<div class="none">No items match.</div>'}
+const SEARCH_MAX=8,SEARCH_GAP_PX=6,SEARCH_EDGE_PX=16,SEARCH_WIDE_PX=420;
+let searchRows=[],searchActive=-1;
+function searchMatches(q){q=q.trim().toLowerCase();if(q.length<2)return [];return Object.values(IDX.life).filter(L=>L.title.toLowerCase().includes(q)||L.identifiers.some(x=>x.toLowerCase().includes(q))).sort((p,q2)=>q2.last_seen.localeCompare(p.last_seen)||q2.maxScore-p.maxScore)}
+function searchItems(q){return searchMatches(q).slice(0,SEARCH_MAX)}
+function searchClose(){const box=document.getElementById('sres'),q=document.getElementById('q');if(box)box.hidden=true;searchActive=-1;if(q){q.setAttribute('aria-expanded','false');q.removeAttribute('aria-activedescendant')}}
+/* the list hangs off the right edge of the search box; when that would leave the viewport (narrow header), pin it to the page margins under the input instead */
+function searchPlace(q,box){if(typeof q.getBoundingClientRect!=='function')return;
+  const host=(q.closest&&q.closest('.search')||q).getBoundingClientRect(),vw=window.innerWidth,w=Math.min(SEARCH_WIDE_PX,vw*.88);
+  const fits=host.right-w>=SEARCH_EDGE_PX/2&&host.right<=vw-SEARCH_EDGE_PX/2;
+  Object.assign(box.style,fits?{position:'',top:'',left:'',right:'',width:'',maxWidth:''}:{position:'fixed',top:(host.bottom+SEARCH_GAP_PX)+'px',left:SEARCH_EDGE_PX+'px',right:SEARCH_EDGE_PX+'px',width:'auto',maxWidth:'none'})}
+function searchSetActive(i){const rows=searchRows;if(!rows.length)return;searchActive=(i+rows.length)%rows.length;
+  const box=document.getElementById('sres'),q=document.getElementById('q');
+  Array.from(box.querySelectorAll?box.querySelectorAll('[role="option"]'):[]).forEach((el,n)=>{const on=n===searchActive;el.setAttribute('aria-selected',String(on));if(on&&el.scrollIntoView)el.scrollIntoView({block:'nearest'})});
+  q.setAttribute('aria-activedescendant','sr-'+searchActive)}
+function searchChoose(i){const L=searchRows[i];if(!L)return;searchClose();location.hash='#item-'+L.id}
+function searchKey(e){if(!e.target||e.target.id!=='q')return;const box=document.getElementById('sres');
+  if(e.key==='Escape'){if(!box.hidden)searchClose();return}
+  if(e.key!=='ArrowDown'&&e.key!=='ArrowUp'&&e.key!=='Enter')return;
+  if(box.hidden){if(e.key==='Enter')return;renderSearch()}
+  if(!searchRows.length)return;e.preventDefault();
+  if(e.key==='Enter')searchChoose(searchActive>=0?searchActive:0);
+  else searchSetActive(searchActive<0?(e.key==='ArrowDown'?0:-1):searchActive+(e.key==='ArrowDown'?1:-1))}
+function renderSearch(){const q=document.getElementById('q');const box=document.getElementById('sres');if(!BOOTED){searchClose();return}if(!q||!document.activeElement||document.activeElement!==q||q.value.trim().length<2){searchClose();return}
+  const all=searchMatches(q.value),r=all.slice(0,SEARCH_MAX);searchRows=r;searchActive=-1;box.hidden=false;box.setAttribute('role','listbox');box.setAttribute('aria-label','Search results');
+  q.setAttribute('role','combobox');q.setAttribute('aria-expanded','true');q.setAttribute('aria-controls','sres');q.setAttribute('aria-autocomplete','list');q.removeAttribute('aria-activedescendant');
+  box.innerHTML=r.length?r.map((L,i)=>`<div class="r" id="sr-${i}" role="option" aria-selected="false" data-open="${esc(L.id)}"><span class="t">${esc(L.title)}</span><span class="m">${L.identifiers[0]?esc(L.identifiers[0])+' · ':''}${L.last_seen===TODAY_S?'today':esc(L.last_seen)}${L.maxTier===1?' · T1':''}</span></div>`).join('')+(all.length>r.length?`<div class="none">${all.length-r.length} more, keep typing</div>`:''):'<div class="none">No items match.</div>';searchPlace(q,box)}
 /* v1.6.0 motion helpers. markViewEnter: the view fades in when the route changes (page, area, date or report), not
    on every re-render, so toggling a star or a filter never flashes the page. flipRender: Wrike-style glide; on
    re-renders that reorder or resize cards, each [data-flip] element animates from its old position to its new one
@@ -1396,15 +1423,15 @@ document.addEventListener('click',e=>{
   const grp=t.closest('[data-grp]');if(grp){const k=grp.dataset.grp;const open=grp.getAttribute('aria-expanded')==='true';if(open){state.side.delete(k);state.side.add('!'+k)}else{state.side.add(k);state.side.delete('!'+k)}
     /* v1.6.0: toggle the existing group in place so the accordion can animate; the next full render agrees with state.side */
     const g=grp.closest('.grp');if(g&&g.classList){g.classList.toggle('open',!open);grp.setAttribute('aria-expanded',String(!open));const ch=grp.querySelector&&grp.querySelector('.chev');if(ch)ch.textContent=open?'▾':'▴'}else renderSide();return}
-  if(t.id==='menubtn'){state.sideOpen=!state.sideOpen;renderSide();return}
+  const mb=t.closest('#menubtn');if(mb){state.sideOpen=!state.sideOpen;renderSide();return}
   if((t.closest('#sideTgl')||(t.closest('#side')&&!t.closest('a,button')))&&window.innerWidth>900){state.sideCollapsed=!state.sideCollapsed;store.set('sidecol',state.sideCollapsed);renderSide();announce(state.sideCollapsed?'Sidebar collapsed':'Sidebar expanded');return}
-  if(t.id==='avatarBtn'){state.umenu=!state.umenu;renderUmenu();return}
+  if(t.closest('#avatarBtn')){state.umenu=!state.umenu;renderUmenu();return}
   const ts=t.closest('[data-theme-set]');if(ts){setTheme(ts.dataset.themeSet);return}
-  if(t.id==='fbBtn'){state.umenu=false;renderUmenu();fbStart();return}
+  if(t.closest('#fbBtn')){state.umenu=false;renderUmenu();fbStart();return}
   if(t.closest('[data-fbclose]')){fb.mode=null;fb.rect=null;fbRender();return}
   if(t.closest('[data-fbretake]')){fbStart();return}
   if(t.closest('[data-fbviewport]')){fbCapture({x:Math.round(window.scrollX),y:Math.round(window.scrollY),w:Math.round(window.innerWidth),h:Math.round(window.innerHeight)});return}
-  if(t.closest('[data-fbskip]')){fb.mode='form';fb.shot=null;fbRender();const f=document.getElementById('fb1');if(f)f.focus();return}
+  if(t.closest('[data-fbskip]')){fbSkip();return}
   if(t.closest('[data-fbsave]')){fbSave();return}
   if(t.closest('[data-fblist]')){state.umenu=false;renderUmenu();fb.mode='list';fbRender();return}
   if(t.closest('[data-fbcopy]')){const txt=JSON.stringify(fb.list,null,1);navigator.clipboard?.writeText(txt).then(()=>{t.textContent='Copied';announce('Feedback copied as JSON')}).catch(()=>{t.textContent='Copy failed';announce('Copy failed')});return}
@@ -1413,6 +1440,7 @@ document.addEventListener('click',e=>{
   const tg=t.closest('[data-tabgo]');if(tg){state.tab=tg.dataset.tabgo;state.umenu=false;if(location.hash==='#home')render();return}
   if(!t.closest('#umenu')&&!t.closest('#avatarBtn')&&state.umenu){state.umenu=false;renderUmenu()}
   if(!t.closest('.search'))document.getElementById('sres').hidden=true;
+  const sr=t.closest('#sres [data-open]');if(sr){searchClose();location.hash='#item-'+sr.dataset.open;return}
   if(t.closest('#side')&&t.closest('a')&&window.innerWidth<=900){closeDrawer(false)}
   if(t.id==='resetBtn'){resetAll();return}
   if(t.closest('[data-pick]')){state.pick=!state.pick;render();return}
@@ -1489,6 +1517,10 @@ document.addEventListener('mousemove',e=>{const mk=e.target.closest&&e.target.cl
 document.addEventListener('focusin',e=>{const mk=e.target.closest&&e.target.closest('.chart .clk');if(mk)showTip(mk,null)});
 document.addEventListener('focusout',e=>{const mk=e.target.closest&&e.target.closest('.chart .clk');if(mk){const tp=mk.closest('.chart').querySelector('.ctip');if(tp)tp.style.display='none'}});
 document.addEventListener('input',e=>{if(e.target.id==='q')renderSearch()});
+document.addEventListener('keydown',searchKey);
+document.addEventListener('focusout',e=>{if(!e.target||e.target.id!=='q')return;const to=e.relatedTarget;if(to&&to.closest&&to.closest('.search'))return;searchClose()});
+document.addEventListener('mousedown',e=>{if(e.target&&e.target.closest&&e.target.closest('#sres'))e.preventDefault()}); /* keep focus in #q so a click on a row is not cancelled by the blur */
+document.addEventListener('keydown',e=>{const r=e.target&&e.target.matches&&e.target.matches('tr.rowlink[data-nav]')?e.target:null;if(r&&(e.key==='Enter'||e.key===' ')){e.preventDefault();r.click()}});
 document.addEventListener('focusin',e=>{if(e.target.id==='q')renderSearch()});
 window.addEventListener('hashchange',()=>{state.umenu=false;render()});
 document.addEventListener('submit',e=>{if(!e.target)return;if(e.target.id==='signinForm'){e.preventDefault();if(e.target.getAttribute('data-mode')==='code')sendMagicLink();else signInWithPassword()}else if(e.target.id==='codeForm'){e.preventDefault();verifyCode()}else if(e.target.id==='pwForm'){e.preventDefault();savePassword()}});
@@ -1749,7 +1781,8 @@ function pushSettings(){
 /* v1.6.0: a success toast fades out (leaving phase, 200 ms) before it is removed. Each toast carries a token so the
    two timers only act on the toast they were set for; the leaving state is a new object, not a mutation. */
 let toastSeq=0;
-function setToast(msg,cls){const token=++toastSeq;fb.toast={msg,cls,token};if(!fb.mode)fbRender();announce(msg);if(cls==='ok'){setTimeout(()=>{if(!fb.toast||fb.toast.token!==token)return;fb.toast={...fb.toast,leaving:true};if(!fb.mode)fbRender();setTimeout(()=>{if(fb.toast&&fb.toast.token===token){fb.toast=null;if(!fb.mode)fbRender()}},200)},6000)}}
+const FB_SAVED_TOAST_MS=4000;
+function setToast(msg,cls,ms=6000){const token=++toastSeq;fb.toast={msg,cls,token};if(!fb.mode)fbRender();announce(msg);if(cls==='ok'){setTimeout(()=>{if(!fb.toast||fb.toast.token!==token)return;fb.toast={...fb.toast,leaving:true};if(!fb.mode)fbRender();setTimeout(()=>{if(fb.toast&&fb.toast.token===token){fb.toast=null;if(!fb.mode)fbRender()}},200)},ms)}}
 function dataUrlToBlob(u){const i=u.indexOf(',');const bin=atob(u.slice(i+1));const a=new Uint8Array(bin.length);for(let k=0;k<bin.length;k++)a[k]=bin.charCodeAt(k);return new Blob([a],{type:'image/jpeg'})}
 async function fbRemote(entry){
   const uid=userId();if(!SB||!uid)return;
