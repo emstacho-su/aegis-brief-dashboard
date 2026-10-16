@@ -58,6 +58,10 @@ A steps file is a JSON array, or `{"base":..,"viewport":..,"theme":..,"steps":[.
 | metrics | | hash, title, scrollWidth, innerWidth, `hscroll` (horizontal page overflow), theme, focused element |
 | shot | file, sel?, full? | full-page PNG by default; `sel` crops to an element; returns the file plus the metrics |
 
+The `storage` step dumps every localStorage key into the result file. On a Supabase-enabled instance that includes the
+signed-in session token, so treat `results/` as sensitive (it is gitignored) and do not share a result that used
+`storage` against a real sign-in.
+
 Every step record carries `ok`, `ms`, `title` and `url`. The result also lists every console error and warning,
 page error, failed request and 4xx/5xx response with the step index it happened on. Exit code 0 when every step
 passed, 1 otherwise.
