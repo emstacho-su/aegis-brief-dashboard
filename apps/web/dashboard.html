@@ -138,7 +138,6 @@ h1,h2,h3{text-wrap:balance}
 .side .grp{margin-top:.15rem}
 .side .grp .hd2{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.42rem .6rem;border-radius:var(--radius-md);color:var(--text-primary);font-size:13px;font-weight:600;cursor:pointer;width:100%;text-align:left}
 .side .grp .hd2:hover{background:var(--bg-hover)}
-.side .grp .hd2 .chev{font-family:var(--font-mono);font-size:11px;color:var(--text-muted)}
 /* v1.6.0: the group accordion animates its height (0fr -> 1fr on the grid track); the inner wrapper clips, and
    visibility keeps closed links out of the tab order the way display:none used to. The wrapper's 5px of room
    (padding pulled back by a negative margin, link margins top and bottom) keeps the 3px + 2px focus ring unclipped. */
@@ -482,8 +481,13 @@ tr.rowlink{cursor:pointer}tr.rowlink td:first-child,tr.rowlink td a{white-space:
 .tl2 .tip{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);min-width:170px;max-width:260px;background:var(--bg-secondary);border:1px solid var(--border-hover);border-radius:var(--radius-md);padding:.45rem .6rem;font-size:12px;color:var(--text-primary);box-shadow:var(--shadow);display:none;z-index:5;pointer-events:none;white-space:normal;line-height:1.35}
 .tl2 .tip .d{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:2px}
 .tl2 .tip .s{color:var(--text-secondary);font-size:11.5px}
-.tl2 .ev:hover .tip,.tl2 .ev:focus .tip,.tl2 .ev:focus-visible .tip{display:block;animation:fade-in .12s ease-out backwards}
 .tl2.notips .tip{display:none!important}
+.tlfloat{position:fixed;z-index:120;min-width:170px;max-width:260px;background:var(--bg-secondary);border:1px solid var(--border-hover);border-radius:var(--radius-md);padding:.45rem .6rem;font-size:12px;color:var(--text-primary);box-shadow:var(--shadow);display:none;pointer-events:none;white-space:normal;line-height:1.35}
+.tlfloat .d{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);margin-bottom:2px}
+.tlfloat .s{color:var(--text-secondary);font-size:11.5px}
+.tchart.chart{background:none;border:0;padding:0;border-radius:0}
+.tchart .clk{fill:transparent;cursor:default}
+.tchart .clk:hover,.tchart .clk:focus-visible{fill:var(--text-primary);fill-opacity:.35;outline:none}
 .tl2 .ev.edge-l .tip{left:0;transform:none}.tl2 .ev.edge-r .tip{left:auto;right:0;transform:none}
 .tl2 .cur{position:absolute;top:100px;transform:translateX(-50%);font-family:var(--font-mono);font-size:10px;color:var(--text-primary);background:var(--bg-active);border:1px solid var(--border-hover);border-radius:var(--radius-sm);padding:0 5px;pointer-events:none;display:none;z-index:4}
 .tl2 .curline{position:absolute;top:16px;bottom:18px;width:1px;background:var(--border-hover);pointer-events:none;display:none}
@@ -1237,12 +1241,20 @@ function timeline(L,it){
   return `<div class="tl2wrap" tabindex="0" role="region" aria-label="Item timeline; scroll sideways when it is wider than the card"><div class="tl2" data-t0="${t0}" data-t1="${t1}" style="min-width:${Math.max(0,widthPx)}px"><div class="months">${months}</div><div class="track"></div>${segs}${icons}${labels}<div class="today" style="left:${X(ms(TODAY_S))}"><i>TODAY</i></div><div class="curline"></div><div class="cur"></div></div></div>${widthPx>TL_SCROLL_HINT_PX?'<div class="tlhint" aria-hidden="true">← scroll for earlier dates</div>':''}
   <div class="lg2"><span><i class="fs"></i>first brief</span><span><i class="pb" style="background:var(--text-secondary)"></i>in brief (ring = tier)</span><span><i class="pb"></i>CVE published</span><span class="mono" style="color:var(--sev-critical)">!</span><span class="muted">escalation · hover an icon for the snippet, hover the track for the date</span></div>`;
 }
+function trajectoryRows(L,i){ /* tooltip rows for observation i of a lifecycle */
+  const d=L.days[i],o=BRIEFS[d]&&BRIEFS[d].items.find(x=>x.item_id===L.id);const delta=i?L.scores[i]-L.scores[i-1]:null;
+  const rows=[{l:'Tier',v:L.tiers[i]},{l:'Score',v:L.scores[i]},{l:'Status',t:o?(o.status==='new'?'new':'continued '+(o.continued_days||0)+'d'):'n/a'},{l:'Change',t:delta==null?'first seen':(delta>=0?'+':'')+delta}];
+  if(L.escDays.includes(d))rows.push({l:'Escalation',t:'required'});
+  return rows;
+}
 function trajectory(L){const n=L.scores.length;if(n<2)return `<div class="empty">Single observation; no trajectory yet.</div>`;const W=600,H=90,PLx=28,PRx=10,PTx=10,PBx=18;const X=i=>PLx+i/(n-1)*(W-PLx-PRx),Y=v=>PTx+(1-v/100)*(H-PTx-PBx);
-  let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="Score trajectory">`;[0,50,100].forEach(v=>s+=`<line class="grid" style="stroke:var(--border-muted)" x1="${PLx}" x2="${W-PRx}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${PLx-4}" y="${Y(v)+3}" text-anchor="end" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${v}</text>`);
+  let s=`<div class="chart tchart"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;overflow:visible" role="img" aria-label="Score trajectory">`;[0,50,100].forEach(v=>s+=`<line class="grid" style="stroke:var(--border-muted)" x1="${PLx}" x2="${W-PRx}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${PLx-4}" y="${Y(v)+3}" text-anchor="end" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${v}</text>`);
   s+=`<path style="fill:none;stroke:var(--text-primary);stroke-width:2" d="${L.scores.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ')}"/>`;
-  L.tiers.forEach((t,i)=>{if(i===0||t!==L.tiers[i-1])s+=`<circle cx="${X(i)}" cy="${Y(L.scores[i])}" r="4.5" style="fill:${t===1?'var(--sev-critical)':t===2?'var(--sev-medium)':'var(--chart-t3)'};stroke:var(--bg-primary);stroke-width:1.5"><title>${L.days[i]}: Tier ${t}, score ${L.scores[i]}</title></circle>`});
+  L.tiers.forEach((t,i)=>{if(i===0||t!==L.tiers[i-1])s+=`<circle cx="${X(i)}" cy="${Y(L.scores[i])}" r="4.5" style="fill:${t===1?'var(--sev-critical)':t===2?'var(--sev-medium)':'var(--chart-t3)'};stroke:var(--bg-primary);stroke-width:1.5"/>`});
   L.escDays.forEach(d=>{const i=L.days.indexOf(d);s+=`<text x="${X(i)}" y="${Y(L.scores[i])-8}" text-anchor="middle" style="font-family:var(--font-mono);font-size:10px;fill:var(--sev-critical);font-weight:600">!</text>`});
-  s+=`<text x="${PLx}" y="${H-4}" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[0]}</text><text x="${W-PRx}" y="${H-4}" text-anchor="end" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[n-1]}</text></svg><div class="legend"><span><i class="i-line"></i>score</span><span><i class="i-t1"></i>Tier 1</span><span><i class="i-t2"></i>Tier 2</span><span><i class="i-t3"></i>Tier 3</span><span class="mono" style="color:var(--sev-critical)">!</span><span class="muted">escalation</span></div>`;return s;
+  s+=`<text x="${PLx}" y="${H-4}" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[0]}</text><text x="${W-PRx}" y="${H-4}" text-anchor="end" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[n-1]}</text>`;
+  L.days.forEach((d,i)=>{s+=`<circle class="clk tpt" cx="${X(i)}" cy="${Y(L.scores[i])}" r="7" tabindex="0" role="img" aria-label="${esc(d)}: Tier ${L.tiers[i]}, score ${L.scores[i]}" ${tipAttr(d,trajectoryRows(L,i))}/>`});
+  s+=`</svg><div class="ctip"></div></div><div class="legend"><span><i class="i-line"></i>score</span><span><i class="i-t1"></i>Tier 1</span><span><i class="i-t2"></i>Tier 2</span><span><i class="i-t3"></i>Tier 3</span><span class="mono" style="color:var(--sev-critical)">!</span><span class="muted">escalation · hover a point for the date and score</span></div>`;return s;
 }
 function renderDetail(id,enter){ /* enter: first render of this item; a re-render while it is open must not replay the entrance */
   const ovc=enter?'ov enter':'ov';const x=itemAny(id);if(!x)return `<div class="${ovc}" id="ovbg"><div class="panel"><button class="close" data-close>close ✕</button><div class="empty">No item with that id in the archive.</div></div></div>`;
@@ -1305,7 +1317,7 @@ function renderSide(){
     ${lnk('#brief','brief',"Today's brief",is('brief',state.date===TODAY_S),`<span class="dotc">${esc(TODAY_S.slice(5))}</span>`,'top')}
     ${groups.map(([k,l,icon,href,inner,auto])=>{const open=state.side.has(k)||(auto&&!state.side.has('!'+k));return col
       ?`<div class="grp"><a class="hd2 ${auto?'on':''}" href="${href}" title="${l}"><span class="lb">${I[icon]}</span></a></div>`
-      :`<div class="grp ${open?'open':''}"><button class="hd2" data-grp="${k}" aria-expanded="${open}"><span class="lb">${I[icon]}<span class="tx">${l}</span></span><span class="chev">${open?'▴':'▾'}</span></button><div class="sub"><div class="in">${inner}</div></div></div>`}).join('')}
+      :`<div class="grp ${open?'open':''}"><button class="hd2" data-grp="${k}" aria-expanded="${open}"><span class="lb">${I[icon]}<span class="tx">${l}</span></span></button><div class="sub"><div class="in">${inner}</div></div></div>`}).join('')}
     ${lnk('#trends','trends','Trends',is('trends'),state.report?`<span class="dotc" title="${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}">${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}</span>`:'','top')}</nav>`;
   const side=document.getElementById('side');side.classList.toggle('open',state.sideOpen);side.classList.toggle('collapsed',col);syncMenubtn();restoreFocus(fkey);
   const shell=document.querySelector('.shell');if(shell)shell.classList.toggle('collapsed',col);
@@ -1549,7 +1561,7 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-toastx]')){fb.toast=null;fbRender();return}
   const grp=t.closest('[data-grp]');if(grp){const k=grp.dataset.grp;const open=grp.getAttribute('aria-expanded')==='true';if(open){state.side.delete(k);state.side.add('!'+k)}else{state.side.add(k);state.side.delete('!'+k)}saveSideGroups();
     /* v1.6.0: toggle the existing group in place so the accordion can animate; the next full render agrees with state.side */
-    const g=grp.closest('.grp');if(g&&g.classList){g.classList.toggle('open',!open);grp.setAttribute('aria-expanded',String(!open));const ch=grp.querySelector&&grp.querySelector('.chev');if(ch)ch.textContent=open?'▾':'▴'}else renderSide();return}
+    const g=grp.closest('.grp');if(g&&g.classList){g.classList.toggle('open',!open);grp.setAttribute('aria-expanded',String(!open));}else renderSide();return}
   const mb=t.closest('#menubtn');if(mb){state.sideOpen=!state.sideOpen;renderSide();return}
   if((t.closest('#sideTgl')||(t.closest('#side')&&!t.closest('a,button')))&&window.innerWidth>900){state.sideCollapsed=!state.sideCollapsed;store.set('sidecol',state.sideCollapsed);renderSide();announce(state.sideCollapsed?'Sidebar collapsed':'Sidebar expanded');return}
   if(t.closest('#avatarBtn')){state.umenu=!state.umenu;renderUmenu();return}
@@ -1593,7 +1605,7 @@ document.addEventListener('click',e=>{
   const nv=t.closest('[data-nav]');if(nv&&!t.closest('a')){location.hash=nv.dataset.nav;return}
   const orow=t.closest('[data-openrow]');if(orow){location.hash='#item-'+orow.dataset.openrow;return}
   /* chart marks: set selection; double-click on area bars opens the area */
-  const mk=t.closest('.chart .clk');if(mk){markClick(mk,e);return}
+  const mk=t.closest('.chart .clk');if(mk){if(!mk.closest('.tchart'))markClick(mk,e);return}
   if(t.closest('a')||t.closest('button')||t.closest('select'))return;
   const ex=t.closest('[data-expand]');if(ex){state.level.set(ex.dataset.expand,3);state.anim={kind:'expand',key:ex.dataset.expand};flipRender();return}
   const op=t.closest('[data-open]');if(op){location.hash='#item-'+op.dataset.open;return}
@@ -1607,7 +1619,7 @@ function markClick(mk,e){const key=mk.dataset.day||mk.dataset.key;const prev=las
 document.addEventListener('change',e=>{const s=e.target.closest('[data-f]');if(s){const k=s.dataset.f;const v=s.value;state.f[k]=v===''?null:(k==='tier'||k==='period'?Number(v):v);if(k==='period'||k==='area'||k==='tarea')state.sel=null;flipRender()}});
 document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.matches&&(e.target.matches('.chart .clk')||e.target.matches('[data-ctx]')||e.target.matches('.rcardi')||e.target.matches('tr[data-openrow]'))){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));return}
-  if(e.key==='Escape'){document.querySelectorAll('.tl2').forEach(t=>t.classList.add('notips'))}
+  if(e.key==='Escape'){document.querySelectorAll('.tl2').forEach(t=>t.classList.add('notips'));hideTlTip()}
   if(e.key==='Escape'&&fb.mode){fb.mode=null;fb.rect=null;fbRender();return}
   if(e.key==='Escape'&&location.hash.startsWith('#item-')){closeOv();return}
   if(e.key==='Escape'&&e.target&&e.target.id==='q'&&e.target.blur&&window.innerWidth<=600)e.target.blur(); /* phone: the open search field collapses back to its icon */
@@ -1633,6 +1645,25 @@ document.addEventListener('focusout',e=>{ /* tabbing out of the account menu clo
   if(!state.umenu)return;const to=e.relatedTarget,inMenu=n=>n&&n.closest&&(n.closest('#umenu')||n.closest('#avatarBtn'));
   if(to&&!inMenu(to)&&inMenu(e.target))closeUmenu(false);
 });
+/* Timeline tips float above the strip: .tl2wrap scrolls sideways, which also clips vertically, so an in-place tip would be cut off. */
+let tlFloatEl=null;
+function tlFloat(){if(tlFloatEl&&tlFloatEl.isConnected)return tlFloatEl;tlFloatEl=document.createElement('div');tlFloatEl.className='tlfloat';tlFloatEl.setAttribute('aria-hidden','true');document.body.appendChild(tlFloatEl);return tlFloatEl}
+function showTlTip(ev){
+  const src=ev&&ev.querySelector&&ev.querySelector('.tip');if(!src)return;
+  const f=tlFloat();f.innerHTML=src.innerHTML;f.style.display='block';f.style.left='0px';f.style.top='0px';
+  const r=ev.getBoundingClientRect(),w=f.offsetWidth||0,h=f.offsetHeight||0,vw=window.innerWidth,vh=window.innerHeight;
+  const left=Math.round(Math.min(Math.max(8,r.left+r.width/2-w/2),Math.max(8,vw-w-8)));
+  let top=Math.round(r.top-h-8);if(top<8)top=Math.round(Math.min(r.bottom+8,Math.max(8,vh-h-8))); /* no room above: below the icon */
+  f.style.left=left+'px';f.style.top=top+'px';
+}
+function hideTlTip(){if(tlFloatEl)tlFloatEl.style.display='none'}
+const sameEv=(e,ev)=>!!(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('.tl2 .ev')===ev);
+document.addEventListener('mouseover',e=>{const ev=e.target.closest&&e.target.closest('.tl2 .ev');if(ev&&!sameEv(e,ev))showTlTip(ev)});
+document.addEventListener('mouseout',e=>{const ev=e.target.closest&&e.target.closest('.tl2 .ev');if(ev&&!sameEv(e,ev))hideTlTip()});
+document.addEventListener('focusin',e=>{const ev=e.target.closest&&e.target.closest('.tl2 .ev');if(ev)showTlTip(ev)});
+document.addEventListener('focusout',e=>{if(e.target.closest&&e.target.closest('.tl2 .ev'))hideTlTip()});
+document.addEventListener('scroll',e=>{if(e.target&&e.target.closest&&e.target.closest('.tl2wrap'))hideTlTip()},true);
+window.addEventListener('hashchange',hideTlTip);
 document.addEventListener('mousemove',e=>{const tl=e.target.closest&&e.target.closest('.tl2');if(!tl)return;tl.classList.remove('notips');const r=tl.getBoundingClientRect();const f=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));const t0=+tl.dataset.t0,t1=+tl.dataset.t1;const t=t0+f*(t1-t0);const d=new Date(Math.round(t/86400000)*86400000).toISOString().slice(0,10);const x=(f*100).toFixed(2)+'%';const c=tl.querySelector('.cur'),l=tl.querySelector('.curline');if(c){c.style.left=x;c.textContent=d}if(l)l.style.left=x});
 function showTip(mark,ev){const chart=mark.closest('.cscroll')||mark.closest('.chart');const tip=chart&&chart.querySelector('.ctip');if(!tip||!mark.dataset.tip)return;let d;try{d=JSON.parse(mark.dataset.tip)}catch(e){return}
   tip.innerHTML=`<div class="d">${esc(d.t)}</div>${d.r.map(r=>`<div class="r"><span><i class="${r.c==='c-new'||r.c==='c-line2'||r.c==='c-a'?'i-a':r.c==='c-t1'?'i-t1':r.c==='c-t2'?'i-t2':r.c==='c-t3'?'i-t3':r.c==='c-c'?'i-c':r.c==='c-line'?'i-line':'i-b'}"></i>${esc(r.l)}</span><b>${esc(rowText(r))}</b></div>`).join('')}`;
