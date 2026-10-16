@@ -109,6 +109,8 @@ function renderAll(env, label) {
 /* ---- fake supabase-js (records calls) ---- */
 function fakeSupabase(db) {
   const log = { otp: [], verify: [], pw: [], update: [], queries: [], uploads: [], signOut: 0 };
+  const flags = { net: false };   /* net: every auth call rejects like a dropped connection */
+  const netDown = () => { if (flags.net) throw new TypeError('Failed to fetch'); };
   let cb = null, session = db.session || null;
   const qb = table => {
     const st = { table, ops: [] };
@@ -124,16 +126,16 @@ function fakeSupabase(db) {
     auth: {
       getSession: async () => ({ data: { session }, error: null }),
       onAuthStateChange(fn) { cb = fn; return { data: { subscription: { unsubscribe() {} } } }; },
-      signInWithOtp: async a => { log.otp.push(a); return { error: null }; },
-      signInWithPassword: async a => { log.pw.push(a); if (a.password !== 'correct horse battery') return { error: new Error('Invalid login credentials') }; session = { access_token: 'tokpw', user: { id: db.pwUid || 'pw-user', email: a.email } }; cb && cb('SIGNED_IN', session); return { data: { session }, error: null }; },
+      signInWithOtp: async a => { netDown(); log.otp.push(a); return { error: null }; },
+      signInWithPassword: async a => { netDown(); log.pw.push(a); if (a.password !== 'correct horse battery') return { error: new Error('Invalid login credentials') }; session = { access_token: 'tokpw', user: { id: db.pwUid || 'pw-user', email: a.email } }; cb && cb('SIGNED_IN', session); return { data: { session }, error: null }; },
       updateUser: async a => { log.update.push(a); return { data: {}, error: null }; },
-      verifyOtp: async a => { log.verify.push(a); if (a.token !== '123456') return { error: new Error('Token has expired or is invalid') }; return { data: {}, error: null }; },
+      verifyOtp: async a => { netDown(); log.verify.push(a); if (a.token !== '123456') return { error: new Error('Token has expired or is invalid') }; return { data: {}, error: null }; },
       signOut: async () => { log.signOut++; session = null; cb && cb('SIGNED_OUT', null); return { error: null }; },
     },
     from: qb,
     storage: { from: bucket => ({ upload: async (p, blob, o) => { log.uploads.push({ bucket, path: p, size: blob.size, o }); return { data: { path: p }, error: null }; } }) },
   };
-  return { lib: { createClient: (url, key, opts) => { log.created = { url, key, opts }; return client; } }, log,
+  return { lib: { createClient: (url, key, opts) => { log.created = { url, key, opts }; return client; } }, log, flags,
     signIn(s) { session = s; cb && cb('SIGNED_IN', s); } };
 }
 
@@ -202,6 +204,8 @@ function fakeSupabase(db) {
     const one = { [Object.keys(briefs)[0]]: briefs[Object.keys(briefs)[0]] };
     const env = await start({ config: { apiBase: '' }, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify(one)) }) }) });
     const c = renderAll(env, 'one-brief');
+    env.ctx.location.hash = '#trends-movers'; env.run('render()');
+    ok(/Only one brief in the window/.test(env.main().innerHTML) && !/vs d{4}-d{2}-d{2}/.test(env.main().innerHTML), 'movers with a single brief shows dashes / vs today instead of an empty state');
     console.log(`3c. single brief   views=${c.views} popouts=${c.popouts}`);
   }
   {
@@ -226,15 +230,42 @@ function fakeSupabase(db) {
     ok(/id="signinForm"/.test(m0) && /<label for="signinEmail">/.test(m0) && /id="signinPw"/.test(m0) && /data-signin-mode="code"/.test(m0) && env.ctx.__focused === 'signinEmail', 'password sign-in screen or focus missing');
     ok(/Sign in required/.test(env.els.get('live').textContent), 'sign-in not announced');
     const gid = id => env.ctx.document.getElementById(id);
+    /* regressions: auth. The toggle is a real button; the signed-out shell is gated; aria-invalid clears */
+    ok(/<button[^>]*type="button"[^>]*data-signin-mode="code"/.test(m0) && !/<a [^>]*data-signin-mode/.test(m0), 'the password/code toggle is not a type=button button');
+    ok(gid('q').disabled && gid('fbBtn').disabled && gid('q').getAttribute('title') === 'Sign in first' && gid('fbBtn').getAttribute('title') === 'Sign in first', 'search box and feedback button are not disabled while signed out');
+    env.run('state.umenu=true;renderUmenu()');
+    ok(!/data-tabgo/.test(env.els.get('umenu').innerHTML) && /id="menuSignInBtn"/.test(env.els.get('umenu').innerHTML), 'quick links are still offered while signed out');
+    env.run('state.umenu=false;renderUmenu()');
+    const fireInput = id => (env.listeners['doc:input'] || []).forEach(fn => fn({ target: gid(id) }));
+    gid('signinEmail').value = 'Analyst@syr.edu'; gid('signinPw').value = '';
+    await env.run('signInWithPassword()');
+    ok(gid('signinPw').getAttribute('aria-invalid') === 'true', 'empty password did not set aria-invalid');
+    fireInput('signinPw');
+    ok(gid('signinPw').getAttribute('aria-invalid') === null, 'aria-invalid was not cleared by an input event');
+    await env.run('signInWithPassword()');
+    gid('signinPw').value = 'wrong';
+    await env.run('signInWithPassword()');
+    ok(gid('signinPw').getAttribute('aria-invalid') === null, 'aria-invalid was not cleared by a submit that passed validation');
+    /* a dropped connection reads as a connection problem, not as "Failed to fetch" */
+    fake.flags.net = true;
+    gid('signinPw').value = 'wrong';
+    await env.run('signInWithPassword()');
+    ok(/Could not reach the sign-in service\. Check your connection and try again\./.test(gid('signinStatus').textContent) && !/Failed to fetch/.test(gid('signinStatus').textContent), 'password path network failure text: ' + gid('signinStatus').textContent);
+    ok(!gid('signinSubmit').disabled, 'submit button still busy after a network failure');
+    fake.flags.net = false;
     /* wrong password is reported and does not sign in */
     gid('signinEmail').value = 'Analyst@syr.edu'; gid('signinPw').value = 'wrong';
     await env.run('signInWithPassword()');
-    ok(fake.log.pw.length === 1 && /did not match/.test(env.els.get('signinStatus').textContent) && !env.run('SESSION'), 'wrong password handling');
+    ok(fake.log.pw.length === 2 && /did not match/.test(env.els.get('signinStatus').textContent) && !env.run('SESSION'), 'wrong password handling');
     ok(!gid('signinSubmit').disabled && gid('signinSubmit').getAttribute('aria-busy') === null && !gid('signinSubmit').classList.contains('busy'), 'submit button still busy after a failed sign-in');
     /* switch to the code path */
     env.run("showSignIn('code')");
     ok(/data-mode="code"/.test(env.main().innerHTML) && !/id="signinPw"/.test(env.main().innerHTML), 'code mode card missing');
     env.els.get('signinEmail').value = 'Analyst@syr.edu';
+    fake.flags.net = true;
+    await env.run('sendMagicLink()');
+    ok(/Could not reach the sign-in service/.test(env.els.get('signinStatus').textContent) && !/Failed to fetch/.test(env.els.get('signinStatus').textContent) && fake.log.otp.length === 0, 'code-send network failure text: ' + env.els.get('signinStatus').textContent);
+    fake.flags.net = false;
     await env.run('sendMagicLink()');
     const otp = fake.log.otp[0] || {};
     ok(otp.email === 'Analyst@syr.edu' && otp.options.emailRedirectTo === 'http://localhost/' && otp.options.shouldCreateUser === false, 'signInWithOtp args ' + JSON.stringify(otp));
@@ -244,10 +275,21 @@ function fakeSupabase(db) {
     env.els.get('signinCode').value = '12345';
     await env.run('verifyCode()');
     ok(/6 to 10 digits/.test(env.els.get('signinStatus').textContent), 'short code not rejected locally');
+    env.els.get('signinCode').value = 'abc123456';
+    await env.run('verifyCode()');
+    ok(/6 to 10 digits/.test(env.els.get('signinStatus').textContent) && fake.log.verify.length === 0, 'letters in the code were stripped instead of rejected: ' + JSON.stringify(fake.log.verify));
+    ok(env.els.get('signinCode').getAttribute('aria-invalid') === 'true', 'rejected code did not set aria-invalid');
+    fireInput('signinCode');
+    ok(env.els.get('signinCode').getAttribute('aria-invalid') === null, 'aria-invalid on the code field was not cleared by an input event');
+    fake.flags.net = true;
+    env.els.get('signinCode').value = '123456';
+    await env.run('verifyCode()');
+    ok(/Could not reach the sign-in service/.test(env.els.get('signinStatus').textContent) && !/Failed to fetch/.test(env.els.get('signinStatus').textContent) && fake.log.verify.length === 0, 'verify network failure text: ' + env.els.get('signinStatus').textContent);
+    fake.flags.net = false;
     env.els.get('signinCode').value = '21229477';
     await env.run('verifyCode()');
     ok(/not valid any more/.test(env.els.get('signinStatus').textContent) && fake.log.verify[0].token === '21229477', '8-digit code not passed through');
-    env.els.get('signinCode').value = '123456';
+    env.els.get('signinCode').value = ' 123 456 ';
     await env.run('verifyCode()');
     const v = fake.log.verify[1] || {};
     ok(v.email === 'Analyst@syr.edu' && v.token === '123456' && v.type === 'email', 'verifyOtp args ' + JSON.stringify(v));
@@ -255,6 +297,10 @@ function fakeSupabase(db) {
     await sleep(80); await env.run('booting||Promise.resolve()'); await sleep(40);
     ok(env.run('BOOTED') && env.run('MODE') === 'static', 'static mode did not boot after sign-in');
     ok(env.els.get('ribbon').textContent === `v1.6.0 · ${nBriefs} briefs · static`, 'static ribbon');
+    ok(!gid('q').disabled && !gid('fbBtn').disabled && gid('q').getAttribute('title') === null && gid('fbBtn').getAttribute('title') !== 'Sign in first', 'search box / feedback button still disabled after sign-in');
+    env.run('state.umenu=true;renderUmenu()');
+    ok(/data-tabgo="mine"/.test(env.els.get('umenu').innerHTML), 'quick links missing after sign-in');
+    env.run('state.umenu=false;renderUmenu()');
     ok(env.els.get('avatarBtn').textContent === 'A' && /analyst@syr\.edu/.test(env.els.get('avatarBtn').getAttribute('aria-label')), 'avatar not updated');
     ok(env.run("myAreas.has('perimeter')&&stars.has('x1')") && env.ctx.document.documentElement.getAttribute('data-theme') === 'light', 'remote settings not applied');
     const c = renderAll(env, 'static');
@@ -311,6 +357,20 @@ function fakeSupabase(db) {
     await env.run('signOut()'); await sleep(40);
     console.log(`4. static+auth     sign-in screen (focus=email), OTP sent (shouldCreateUser=false), session -> loaded ${env.run('DATES.length')} briefs from table briefs + archive_index, settings pulled and upserted once (300ms debounce), feedback uploaded to ${up.path.replace(uid, '<uid>')} and inserted, sign out -> sign-in; views=${c.views} popouts=${c.popouts}`);
     console.log('   supabase calls: ' + [...new Set(fake.log.queries.map(q => q.table + ':' + q.ops.map(o => o[0]).join('.')))].join(', '));
+  }
+
+  /* 4b. a magic-link hash whose tokens cannot be verified lands on the card with a message (auth-link-04) */
+  {
+    const fake = fakeSupabase({ answer: () => ({ data: null, error: null }) });
+    const env = makeEnv({ config: { apiBase: '', supabaseUrl: 'https://p.supabase.co', supabaseAnonKey: 'anon', requireAuth: true, mode: 'static' }, supabase: fake.lib });
+    env.ctx.location.hash = '#access_token=bogus&refresh_token=bogus&type=magiclink';
+    env.run(mainScript()); await env.run('booting||Promise.resolve()'); await sleep(60);
+    ok(/id="signinForm"/.test(env.main().innerHTML) && !env.run('SESSION'), 'bogus token hash did not land on the sign-in card');
+    ok(env.main().innerHTML.includes('<p id="signinStatus" class="st err">That sign-in link could not be verified. Request a new code.</p>'), 'bogus token hash message missing from the card');
+    await sleep(60);
+    ok(/could not be verified/.test(env.els.get('live').textContent), 'unverifiable link not announced');
+    ok(!/bogus/.test(env.main().innerHTML + env.els.get('live').textContent), 'token leaked into the page');
+    console.log('4b. bogus token hash: sign-in card shows "could not be verified"');
   }
 
   /* 5. motion (v1.6.0, Wrike reference): skeleton while loading, enter animation keyed to route and intent changes,

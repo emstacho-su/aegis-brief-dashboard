@@ -502,6 +502,8 @@ footer .accent{color:var(--accent)}
 .signin .row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem;align-items:center}
 .signin .st{font-size:12px;color:var(--text-secondary);margin:.7rem 0 0;min-height:1.2em}
 .signin .st.err{color:var(--down)}.signin .st.ok{color:var(--ok)}
+.signin .st button.lnk{background:none;border:0;padding:0;font:inherit;color:var(--external);text-decoration:underline;cursor:pointer}
+.signin .st button.lnk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .fbtoast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:16px;z-index:76;max-width:min(440px,calc(100vw - 32px));background:var(--bg-primary);border:1px solid var(--border-hover);border-left:3px solid var(--accent);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:.55rem .75rem;font-size:13px;display:flex;gap:.6rem;align-items:center}
 .fbtoast.err{border-left-color:var(--down)}.fbtoast.ok{border-left-color:var(--ok)}
 .fbtoast span{flex:1;min-width:0}
@@ -706,7 +708,7 @@ function buildArchive(){
    Sources: container API, Supabase tables (static), injected ARCHIVE_JSON, or the synthetic generator above. */
 let HAS_REAL=false, META={}, BRIEFS={}, DATES=[], TODAY=-1, TODAY_S='', IDX=null;
 let MODE='sample', CFG=null, BOOTED=false;            /* MODE: container | static | sample | local */
-let SB=null, SESSION=null, AUTH_ERR='', SIGNIN=false, applyingRemote=false, syncTimer=null, lastEmail='';
+let SB=null, SESSION=null, AUTH_ERR='', AUTH_NOTICE='', SIGNIN=false, applyingRemote=false, syncTimer=null, lastEmail='';
 let PW_SET=true, PW_FORCE=false;   /* PW_SET: this user has set their own password (user_settings.pw_set); false forces the set-password card */
 function setArchive(briefs,o={}){
   HAS_REAL=!!o.real;META=o.meta||{};BRIEFS=briefs||{};
@@ -1097,9 +1099,9 @@ function renderReport(id){
     chart=calendarStrip(days,v,m,sel)+`<div class="legend"><span><i class="i-t1"></i>Tier 1 count (darker = more)</span><span class="mono">!</span><span class="muted">escalation that day · click a day</span></div>`;
     if(sel&&BRIEFS[sel])extra=`<div class="selbar"><a class="btn sm" href="#brief-${sel}">Open brief ${sel} →</a></div>`+selItems(BRIEFS[sel].items.filter(i=>i.tier===1&&inArea(i)));
     table=dataTable(['Day','Tier 1','Escalations','Items'],days.map((d,i)=>[d,v[i],BRIEFS[d].items.filter(x=>x.escalation.required&&inArea(x)).length,BRIEFS[d].items.filter(inArea).length]).reverse());}
-  else if(id==='movers'){const d0=DATES[Math.max(0,DATES.length-8)];const todayIn=BRIEFS[TODAY_S].items.filter(inArea);const rows=BRIEFS[TODAY_S].items.filter(inArea).map(i=>{const p=BRIEFS[d0].items.find(x=>x.item_id===i.item_id);const a=p?p.score:(IDX.life[i.item_id].scores[0]);return {key:i.item_id,label:i.title.length>28?i.title.slice(0,27)+'…':i.title,a,b:i.score,d:i.score-a}}).filter(r=>r.d!==0).sort((p,q)=>Math.abs(q.d)-Math.abs(p.d)).slice(0,12);
-    kpis=kpiRow([{label:'Biggest riser',text:rows.filter(r=>r.d>0)[0]?esc(rows.filter(r=>r.d>0)[0].label):'–',sub:rows.filter(r=>r.d>0)[0]?'+'+rows.filter(r=>r.d>0)[0].d+' points':''},{label:'Biggest faller',text:rows.filter(r=>r.d<0)[0]?esc(rows.filter(r=>r.d<0)[0].label):'–',sub:rows.filter(r=>r.d<0)[0]?rows.filter(r=>r.d<0)[0].d+' points':''},{label:'Items that moved',value:rows.length},{label:'Avg score today',value:(()=>{const a=BRIEFS[TODAY_S].items.filter(inArea);return a.length?a.reduce((p,c)=>p+c.score,0)/a.length:0})(),prev:(()=>{const a=BRIEFS[d0].items.filter(inArea);return a.length&&todayIn.length?a.reduce((p,c)=>p+c.score,0)/a.length:undefined})()}],`vs ${d0}`);
-    chart=(rows.length?dumbbell(rows,sel):`<div class="empty">${todayIn.length?`No score moves since ${d0}, nothing to rank.`:`No items in ${state.f.tarea?esc(AREAS[state.f.tarea].name):'the brief'} today, nothing to rank.`}</div>`)+`<div class="legend"><span><i class="i-mark"></i>score rose</span><span><i class="i-drop"></i>score fell</span><span class="muted">${d0} to today, or first seen if newer. Score is model-asserted; treat trends as partly a model trend.</span></div>`;
+  else if(id==='movers'){const d0=DATES[Math.max(0,DATES.length-8)];const solo=d0===TODAY_S;const todayIn=BRIEFS[TODAY_S].items.filter(inArea);const rows=BRIEFS[TODAY_S].items.filter(inArea).map(i=>{const p=BRIEFS[d0].items.find(x=>x.item_id===i.item_id);const a=p?p.score:(IDX.life[i.item_id].scores[0]);return {key:i.item_id,label:i.title.length>28?i.title.slice(0,27)+'…':i.title,a,b:i.score,d:i.score-a}}).filter(r=>r.d!==0).sort((p,q)=>Math.abs(q.d)-Math.abs(p.d)).slice(0,12);
+    kpis=solo?'':kpiRow([{label:'Biggest riser',text:rows.filter(r=>r.d>0)[0]?esc(rows.filter(r=>r.d>0)[0].label):'–',sub:rows.filter(r=>r.d>0)[0]?'+'+rows.filter(r=>r.d>0)[0].d+' points':''},{label:'Biggest faller',text:rows.filter(r=>r.d<0)[0]?esc(rows.filter(r=>r.d<0)[0].label):'–',sub:rows.filter(r=>r.d<0)[0]?rows.filter(r=>r.d<0)[0].d+' points':''},{label:'Items that moved',value:rows.length},{label:'Avg score today',value:(()=>{const a=BRIEFS[TODAY_S].items.filter(inArea);return a.length?a.reduce((p,c)=>p+c.score,0)/a.length:0})(),prev:(()=>{const a=BRIEFS[d0].items.filter(inArea);return a.length&&todayIn.length?a.reduce((p,c)=>p+c.score,0)/a.length:undefined})()}],`vs ${d0}`);
+    chart=(solo?`<div class="empty">Only one brief in the window, so there is nothing to compare yet.</div>`:rows.length?dumbbell(rows,sel):`<div class="empty">${todayIn.length?`No score moves since ${d0}, nothing to rank.`:`No items in ${state.f.tarea?esc(AREAS[state.f.tarea].name):'the brief'} today, nothing to rank.`}</div>`)+`<div class="legend"><span><i class="i-mark"></i>score rose</span><span><i class="i-drop"></i>score fell</span><span class="muted">${d0} to today, or first seen if newer. Score is model-asserted; treat trends as partly a model trend.</span></div>`;
     if(sel){const x=itemAny(sel);if(x)extra=selItems([x.it])}
     table=!rows.length?'':dataTable(['Item','Then','Now','Δ'],rows.map(r=>[esc(r.label),r.a,r.b,(r.d>0?'+':'')+r.d]));}
   else if(id==='sources'){const pd=prevDays();const count=ds=>{const m={};lifeIn(ds).filter(inArea).forEach(L=>L.sources.forEach(s=>{m[s]=m[s]||{n:0,t1:0};m[s].n++;if(L.maxTier===1)m[s].t1++}));return m};const m=count(days),pm=count(pd);const rows=Object.entries(m).map(([k,v])=>({key:k,label:k,value:v.n,prev:(pm[k]||{n:0}).n,sub:v.t1,subLabel:'reached Tier 1'})).sort((p,q)=>q.value-p.value).slice(0,10);
@@ -1251,14 +1253,14 @@ function resetAll(){ /* everything this page keeps in the browser, back to first
   ['my','stars','viewed','coll','sidecol','feedback'].forEach(k=>{try{localStorage.removeItem(STORE_NS+k)}catch(e){console.error('AEGIS could not remove '+STORE_NS+k,e)}});
   setTheme('system');scheduleSettingsSync();fbRender();render();announce('Everything saved in this browser was reset');
 }
-function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.umenu;document.getElementById('avatarBtn').setAttribute('aria-expanded',String(state.umenu));renderAvatar();
-  const em=userEmail();
+function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.umenu;document.getElementById('avatarBtn').setAttribute('aria-expanded',String(state.umenu));renderAvatar();renderAuthGate();
+  const em=userEmail();const gated=signedOutGate();   /* signed out behind requireAuth: the quick links would do nothing, so they are not offered */
   const who=em?`<div class="who"><b style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(em)}</b><span>signed in · settings follow your account</span></div>`
     :SB?`<div class="who"><b>Analyst</b><span>not signed in · settings stay in this browser</span></div>`
     :`<div class="who"><b>Analyst</b><span>not signed in · settings stay in this browser</span></div>`;
   const last=em?`<button id="menuPwBtn" role="menuitem">Change password</button><button id="signOutBtn" role="menuitem">Sign out</button>`:SB?`<button id="menuSignInBtn" role="menuitem">Sign in</button>`:`<button class="dis" disabled role="menuitem" aria-disabled="true" title="Sign-in needs the Supabase build of this dashboard">Sign in<span class="c">needs Supabase</span></button>`;
   m.innerHTML=`${who}
-    <a href="#home" role="menuitem" data-tabgo="mine">My areas<span class="c">${myAreas.size}</span></a><a href="#home" role="menuitem" data-tabgo="starred">Starred<span class="c">${stars.size}</span></a><a href="#home" role="menuitem" data-tabgo="viewed">Recently viewed<span class="c">${viewed.length}</span></a>
+    ${gated?'':`<a href="#home" role="menuitem" data-tabgo="mine">My areas<span class="c">${myAreas.size}</span></a><a href="#home" role="menuitem" data-tabgo="starred">Starred<span class="c">${stars.size}</span></a><a href="#home" role="menuitem" data-tabgo="viewed">Recently viewed<span class="c">${viewed.length}</span></a>`}
     <div class="sep"></div><div style="padding:.4rem .9rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;font-size:13px"><span>Theme</span><span class="tseg" role="group" aria-label="Theme">${['dark','light','system'].map(v=>`<button data-theme-set="${v}" aria-pressed="${curTheme()===v}" style="padding:.15rem .5rem;font-size:11px">${v}</button>`).join('')}</span></div>
     <div class="sep"></div><button data-fblist role="menuitem">Feedback captured<span class="c">${fb.list.length}</span></button><button id="resetBtn" role="menuitem">Reset everything saved in this browser</button>
     <div class="sep"></div>${last}`}
@@ -1575,6 +1577,8 @@ document.addEventListener('keydown',e=>{const r=e.target&&e.target.matches&&e.ta
 document.addEventListener('focusin',e=>{if(e.target.id==='q')renderSearch()});
 window.addEventListener('hashchange',()=>{state.umenu=false;render()});
 document.addEventListener('submit',e=>{if(!e.target)return;if(e.target.id==='signinForm'){e.preventDefault();if(e.target.getAttribute('data-mode')==='code')sendMagicLink();else signInWithPassword()}else if(e.target.id==='codeForm'){e.preventDefault();verifyCode()}else if(e.target.id==='pwForm'){e.preventDefault();savePassword()}});
+const SIGNIN_FIELD_IDS=new Set(['signinEmail','signinPw','signinCode','pw1','pw2']);
+document.addEventListener('input',e=>{const t=e&&e.target;if(t&&SIGNIN_FIELD_IDS.has(t.id))clearInvalid(t)});
 
 /* =========================================================================
    8. Loader (data adapter), Supabase magic-link auth, settings sync, team feedback store
@@ -1627,7 +1631,7 @@ async function bootInner(){
     const hashAtLoad=location.hash||'';
     try{await initSupabase();const r=await SB.auth.getSession();SESSION=r&&r.data&&r.data.session||null;setAuthCookie(SESSION);if(r&&r.error)AUTH_ERR=r.error.message}
     catch(e){if(needAuth()||MODE==='static'){showBootError('Sign-in could not start.',e);return}SB=null;SESSION=null}
-    cleanAuthHash(hashAtLoad);
+    cleanAuthHash(hashAtLoad);noteUnverifiedLink(hashAtLoad);
   }
   renderAvatar();renderUmenu();
   if(needAuth()&&!SESSION){if(!SB){showBootError('Sign-in is required, but no Supabase project is configured (supabaseUrl, supabaseAnonKey).');return}showSignIn();return}
@@ -1681,17 +1685,33 @@ function cleanAuthHash(h){
   try{const p=new URLSearchParams(h.slice(1));const d=p.get('error_description');if(d)AUTH_ERR=d.replace(/\+/g,' ')}catch(e){}
   if(/(access_token|error_description|error_code)=/.test(location.hash||'')||location.hash==='#'||location.hash===''){try{history.replaceState(history.state,'',location.pathname+location.search+'#home')}catch(e){}}
 }
+const LINK_FAIL_MSG='That sign-in link could not be verified. Request a new code.';
+const NETWORK_FAIL_MSG='Could not reach the sign-in service. Check your connection and try again.';
+const SIGNIN_FIRST_TITLE='Sign in first',FB_BTN_TITLE='Report a bug or request a change';
+/* supabase-js swallows a failed token check (/auth/v1/user) and getSession() reports no session and no error, so
+   tokens in the hash plus no session is how an unverifiable link shows itself */
+function noteUnverifiedLink(h){if(!SESSION&&!AUTH_ERR&&/(^#|&)access_token=/.test(h))AUTH_NOTICE=LINK_FAIL_MSG}
+/* a dropped connection surfaces as a TypeError or supabase-js's fetch error; provider errors keep their own text */
+function isNetworkFailure(e){const n=String(e&&e.name||''),m=String(e&&e.message||e);return n==='TypeError'||/FetchError/i.test(n)||/failed to fetch|networkerror|network request failed|load failed/i.test(m)}
+function clearInvalid(...els){els.forEach(el=>{if(el&&el.removeAttribute)el.removeAttribute('aria-invalid')})}
+function signedOutGate(){return needAuth()&&!SESSION}
+/* while the sign-in card is the only thing on screen, search and feedback have nothing to act on */
+function renderAuthGate(){
+  const off=signedOutGate(),q=document.getElementById('q'),fb=document.getElementById('fbBtn');
+  if(q){q.disabled=off;if(off)q.setAttribute('title',SIGNIN_FIRST_TITLE);else q.removeAttribute('title')}
+  if(fb){fb.disabled=off;fb.setAttribute('title',off?SIGNIN_FIRST_TITLE:FB_BTN_TITLE)}
+}
 function showSignIn(mode){
   SIGNIN=true;const m=document.getElementById('main');if(!m)return;
   document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
-  const cancel=BOOTED&&!needAuth();const errMsg=AUTH_ERR?`The last sign-in attempt did not work (${AUTH_ERR}). Try again.`:'';
+  const cancel=BOOTED&&!needAuth();const errMsg=AUTH_NOTICE||(AUTH_ERR?`The last sign-in attempt did not work (${AUTH_ERR}). Try again.`:'');AUTH_NOTICE='';
   const codeMode=mode==='code';
   m.innerHTML=`<div class="panel signin"><h1>Sign in to the AEGIS Daily Brief</h1><p class="lead">${codeMode?'Enter your work email. We will email you a one-time code to type in here. Use this the first time you sign in, or if you forgot your password.':'Enter your work email and password.'}</p>
     <form id="signinForm" novalidate data-mode="${codeMode?'code':'password'}"><label for="signinEmail">Email address</label><input id="signinEmail" name="email" type="email" autocomplete="username" inputmode="email" required aria-describedby="signinStatus" value="${esc(lastEmail)}">
     ${codeMode?'':'<label for="signinPw">Password</label><input id="signinPw" name="password" type="password" autocomplete="current-password" required aria-describedby="signinStatus">'}
     <div class="row"><button class="btn primary" type="submit" id="signinSubmit">${codeMode?'Send code':'Sign in'}</button>${cancel?'<button class="btn" type="button" data-signin-cancel>Cancel</button>':''}</div>
     <p id="signinStatus" class="st ${errMsg?'err':''}">${esc(errMsg)}</p>
-    <p class="st" style="margin-top:.9rem">${codeMode?'<a href="#" data-signin-mode="password">Sign in with your password instead</a>':'First time here, or forgot your password? <a href="#" data-signin-mode="code">Email me a one-time code</a>'}</p></form></div>`;
+    <p class="st" style="margin-top:.9rem">${codeMode?'<button type="button" class="lnk" data-signin-mode="password">Sign in with your password instead</button>':'First time here, or forgot your password? <button type="button" class="lnk" data-signin-mode="code">Email me a one-time code</button>'}</p></form></div>`;
   document.title='Sign in · AEGIS Daily Brief';renderRibbon();
   const f=document.getElementById(codeMode||!lastEmail?'signinEmail':'signinPw');if(f)f.focus();
   announce(errMsg||(codeMode?'Sign in required. Enter your email address to get a sign-in code.':'Sign in required. Enter your email address and password.'));
@@ -1701,14 +1721,16 @@ async function signInWithPassword(){
   const email=String(inp&&inp.value||'').trim(),password=String(pw&&pw.value||'');lastEmail=email;
   const say=(msg,cls)=>{if(st){st.textContent=msg;st.className='st '+(cls||'')}announce(msg)};
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter a valid email address.','err');return}
+  clearInvalid(inp);
   if(!password){if(pw){pw.setAttribute('aria-invalid','true');pw.focus()}say('Enter your password, or request a one-time code below.','err');return}
   if(!SB){say('Sign-in is not configured for this page.','err');return}
+  clearInvalid(pw);
   setBusy(btn,true);say('Signing in…');
   try{
     const {error}=await SB.auth.signInWithPassword({email,password});
     if(error)throw error;AUTH_ERR='';say('Signed in. Loading…','ok');   /* onAuthChange boots the page */
   }catch(e){const msg=String(e&&e.message||e);
-    say(/invalid login credentials/i.test(msg)?'Email or password did not match. If you have not set a password yet, request a one-time code below.':/email not confirmed/i.test(msg)?'This account has not been verified yet. Request a one-time code below to verify it.':/rate limit|too many/i.test(msg)?'Too many attempts; wait a minute and try again.':'Could not sign in: '+msg,'err');
+    say(isNetworkFailure(e)?NETWORK_FAIL_MSG:/invalid login credentials/i.test(msg)?'Email or password did not match. If you have not set a password yet, request a one-time code below.':/email not confirmed/i.test(msg)?'This account has not been verified yet. Request a one-time code below to verify it.':/rate limit|too many/i.test(msg)?'Too many attempts; wait a minute and try again.':'Could not sign in: '+msg,'err');
     if(pw){pw.value='';pw.focus()}
     setBusy(btn,false)}
 }
@@ -1770,14 +1792,14 @@ async function sendMagicLink(){
     if(error)throw error;AUTH_ERR='';
     showCodeStep(email);announce(`Code sent to ${email}. Enter the code from the email.`);
   }catch(e){const msg=String(e&&e.message||e);
-    say(/signups? not allowed|user not found|not allowed for otp/i.test(msg)?'That email is not on the access list. Ask an AEGIS admin to invite you.':/rate limit|too many|security purposes/i.test(msg)?'Too many requests for this address; wait a minute and try again.':'Could not send the code: '+msg,'err');
+    say(isNetworkFailure(e)?NETWORK_FAIL_MSG:/signups? not allowed|user not found|not allowed for otp/i.test(msg)?'That email is not on the access list. Ask an AEGIS admin to invite you.':/rate limit|too many|security purposes/i.test(msg)?'Too many requests for this address; wait a minute and try again.':'Could not send the code: '+msg,'err');
     setBusy(btn,false)}
 }
 async function verifyCode(){
   const inp=document.getElementById('signinCode'),st=document.getElementById('signinStatus'),btn=document.getElementById('codeSubmit');
-  const code=String(inp&&inp.value||'').replace(/\D/g,'');
+  const code=String(inp&&inp.value||'').replace(/\s+/g,'');   /* paste-friendly: spaces go, letters are rejected rather than stripped */
   const say=(msg,cls)=>{if(st){st.textContent=msg;st.className='st '+(cls||'')}announce(msg)};
-  if(code.length<6||code.length>10){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter the numeric code from the email (6 to 10 digits).','err');return}
+  if(!/^\d{6,10}$/.test(code)){if(inp){inp.setAttribute('aria-invalid','true');inp.focus()}say('Enter the numeric code from the email (6 to 10 digits).','err');return}
   if(inp)inp.removeAttribute('aria-invalid');
   if(!SB||!lastEmail){showSignIn('code');return}
   setBusy(btn,true);say('Checking the code…');
@@ -1785,7 +1807,7 @@ async function verifyCode(){
     const {error}=await SB.auth.verifyOtp({email:lastEmail,token:code,type:'email'});
     if(error)throw error;AUTH_ERR='';say('Signed in. Loading…','ok');   /* onAuthChange boots the page */
   }catch(e){const msg=String(e&&e.message||e);
-    say(/expired|invalid/i.test(msg)?'That code is not valid any more. Send a new code and use the latest email.':'Could not verify the code: '+msg,'err');
+    say(isNetworkFailure(e)?NETWORK_FAIL_MSG:/expired|invalid/i.test(msg)?'That code is not valid any more. Send a new code and use the latest email.':'Could not verify the code: '+msg,'err');
     if(inp){inp.setAttribute('aria-invalid','true');if(inp.select)inp.select();inp.focus()}
     setBusy(btn,false)}
 }
