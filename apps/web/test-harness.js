@@ -6,6 +6,7 @@
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const HTML = path.join(__dirname, 'dashboard.html');
+const SRC = fs.readFileSync(HTML, 'utf8');
 const args = process.argv.slice(2);
 const dumpAt = args.indexOf('--dump-index');
 const DUMP = dumpAt >= 0 ? args.splice(dumpAt, 2)[1] : null;
@@ -528,6 +529,9 @@ function fakeSupabase(db) {
     const tw = await boot({ [two[0]]: briefs[two[0]], [two[1]]: briefs[two[1]] });
     tw.ctx.location.hash = '#home'; tw.run("state.streamAll=false;render()");
     ok(countEv(tw.main().innerHTML) > 0 && !/NaN/.test(tw.main().innerHTML), 'two briefs: stream empty or NaN');
+
+    /* area-rail-01: when the rail wraps under the items its Activity stream spans the full width */
+    ok(/\.two\.wrap \.rail \.sec>\.stream\{[^}]*grid-column:1\/-1/.test(SRC), 'area-rail-01: the wrapped stream does not span the grid');
     console.log('3e. home-area      priority rail, stream window/Show less, feeds n/a, unknown area link, single-brief NaN');
   }
   /* --- end regressions: home-area --- */
@@ -598,6 +602,41 @@ function fakeSupabase(db) {
     ok(run('fb.list.length') === 0 && run("store.get('feedback',[]).length") === 0, 'Reset kept the feedback list');
     ok(run("store.get('coll',[]).length") === 0 && run("store.get('sidecol',false)") === false && run('myAreas.size') === 0, 'Reset kept collapsed sections, sidebar state or areas');
     ok(/Reset everything saved in this browser/.test(els.get('umenu').innerHTML), 'Reset button label not updated');
+
+    /* sidebar group state persists, Space activates a card, the collapse control is visible to the mouse */
+    {
+      const clickGrp = (open) => { const g = { dataset: { grp: 'areas' }, getAttribute: () => String(open), setAttribute() {}, closest: () => null, querySelector: () => null };
+        fire(env, 'click', { target: fakeTarget({ closest: s => (s === '[data-grp]' ? g : null) }) }); };
+      const saved = () => run("JSON.stringify(store.get('sidegrp',[]))");
+      clickGrp(false);
+      ok(saved() === '["areas"]', 'side-group-persist: opening a group did not store it, got ' + saved());
+      const re = makeEnv(); re.ctx.localStorage.setItem('aegis4-anon-sidegrp', ctx.localStorage.getItem('aegis4-anon-sidegrp'));
+      re.run(mainScript()); await re.run('booting||Promise.resolve()'); await sleep(40);
+      ok(re.run("state.side.has('areas')") === true, 'side-group-persist: the stored group was not open after a reload');
+      ctx.location.hash = '#area-perimeter'; run('render()');
+      ok(/class="grp open"><button class="hd2" data-grp="areas"/.test(els.get('side').innerHTML), 'side-group-persist: the group is not open after the area route');
+      clickGrp(true);
+      ok(saved() === '[]', 'side-group-persist: closing a group left it stored, got ' + saved());
+      ctx.location.hash = '#brief'; run('render()');
+      ok(/class="grp open"><button class="hd2" data-grp="briefs"/.test(els.get('side').innerHTML), 'side-group-persist: open-on-route broke for Briefs');
+      run("store.set('sidegrp',['nope',3])"); run('state.side=loadSideGroups()');
+      ok(run('state.side.size') === 0, 'side-group-persist: junk in storage was accepted');
+
+      let clicks = 0, prevented = 0;
+      const card = fakeTarget({ hasAttribute: a => a === 'data-expand', dataset: { expand: 'x' }, click: () => { clicks++; } });
+      fire(env, 'keydown', { key: ' ', target: card, preventDefault: () => { prevented++; } });
+      ok(clicks === 1 && prevented >= 1, 'kbd-space: Space on a card clicked ' + clicks + ' times, prevented ' + prevented);
+      fire(env, 'keydown', { key: 'Enter', target: card, preventDefault: () => {} });
+      ok(clicks === 2, 'kbd-space: Enter stopped working');
+      const plain = fakeTarget({ hasAttribute: () => false, click: () => { clicks++; } });
+      fire(env, 'keydown', { key: ' ', target: plain, preventDefault: () => {} });
+      ok(clicks === 2, 'kbd-space: Space on a non-card element clicked it');
+
+      ok(/<button id="sideTgl"[^>]*title="Collapse sidebar"[^>]*><svg/.test(els.get('side').innerHTML), 'side-collapse-mouse: the toggle has no icon or tooltip');
+      ok(/@media \(min-width:901px\)\{[^@]*\.side \.tgl button\{[^}]*position:static/.test(SRC), 'side-collapse-mouse: no rule shows the toggle above 900px');
+      ok(/\.side \.lnk \.dotc\{[^}]*text-overflow:ellipsis/.test(SRC), 'side-trends-badge-truncate: the link badge is not truncated');
+      ok(/@media \(max-width:600px\)\{[^}]*\.tabs\{[^}]*flex-wrap:wrap/.test(SRC), 'home-tabs-overflow-390: tabs do not wrap under 600px');
+    }
     console.log('6. shell           skip link, hash normalise, Escape, menu roles/copy, focus restore, plural, disabled neighbours, full reset');
   }
   /* --- end regressions: shell --- */
@@ -695,6 +734,26 @@ function fakeSupabase(db) {
     if (total > 8) ok(new RegExp(`${total - 8} more, keep typing`).test(sres.innerHTML), 'capped search did not say how many more');
     run('searchChoose(0)');
     ok(sres.hidden === true && /^#item-/.test(ctx.location.hash), 'choosing a search result did not close the dropdown and open the item');
+    /* search-area-name-68: an area name or key returns that area's items, tagged, today's first */
+    {
+      const ak = run("Object.keys(AREAS).find(k=>activeItems().some(i=>i.areas.includes(k)&&!i._carried)&&activeItems().some(i=>i.areas.includes(k)&&i._carried))") || run("Object.keys(AREAS)[0]");
+      const an = run("AREAS['"+ak+"'].name");
+      for (const qs of [an, an.toLowerCase(), ak, an.slice(0, 4)]) {
+        const rows = run("searchMatches("+JSON.stringify(qs)+")");
+        const tagged = rows.filter(r => r.inArea);
+        ok(rows.length > 0, 'search-area-name-68: "' + qs + '" found nothing');
+        if (qs === an) {
+          ok(tagged.length > 0 && tagged.every(r => r.inArea === an), 'search-area-name-68: rows not tagged with the area name');
+          const firstOld = tagged.findIndex(r => r.last_seen !== run('TODAY_S'));
+          ok(firstOld < 0 || tagged.slice(firstOld).every(r => r.last_seen !== run('TODAY_S')), 'search-area-name-68: today items do not come first');
+          ok(rows.slice(0, rows.length - tagged.length).every(r => !r.inArea), 'search-area-name-68: title matches do not rank first');
+        }
+      }
+      ok(run("searchMatches('zzzz-no-such')").length === 0, 'search-area-name-68: nonsense matched');
+      q.value = an; ctx.document.activeElement = q; run('renderSearch()');
+      ok(sres.innerHTML.includes('in ' + an.replace(/&/g, '&amp;')), 'search-area-name-68: the result row lacks "in <area>"');
+      q.value = 'cve-'; run('renderSearch()');
+    }
     ctx.location.hash = '#home'; run('render()');
     /* feedback: skip message, saved toast, timestamp format */
     run('fbStart()'); run('fbSkip()');

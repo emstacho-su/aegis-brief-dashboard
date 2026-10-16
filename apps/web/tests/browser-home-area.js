@@ -33,6 +33,17 @@ async function checkStream(page) {
   check(await page.locator('[data-streamall]').count() === 1, 'Show all button missing after Show less');
 }
 
+async function checkWrappedStream(page) {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(PAGE + '#area-perimeter');
+  await page.waitForSelector('.two .rail .stream');
+  await page.waitForTimeout(400); /* fitTwo runs after the render */
+  const m = await page.evaluate(() => { const two = document.querySelector('.two'), st = document.querySelector('.two .rail .sec > .stream');
+    return { wrap: two.classList.contains('wrap'), two: two.querySelector('.rail').getBoundingClientRect().width, stream: st.getBoundingClientRect().width }; });
+  check(m.wrap, 'area page at 1280 is not wrapped, so the stream-width check proves nothing');
+  check(Math.abs(m.stream - m.two) <= 2, 'wrapped Activity stream is ' + m.stream + 'px in a ' + m.two + 'px wrapped rail');
+}
+
 (async () => {
   const browser = await pw.chromium.launch();
   const errors = [];
@@ -45,6 +56,7 @@ async function checkStream(page) {
     await page.waitForSelector('.acard');
     await checkRails(page);
     await checkStream(page);
+    await checkWrappedStream(page);
   } catch (e) {
     failures.push('script error: ' + e.message);
   } finally {
