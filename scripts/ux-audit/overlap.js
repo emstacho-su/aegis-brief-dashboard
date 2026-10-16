@@ -17,7 +17,7 @@ const MIN_PX = 2;
 
 /* Runs inside the page. Returns { textCount, collisions: [{a, b, w, h, rotated}] }. */
 function detectTextCollisions(minPx) {
-  const LAYERS = '.ctip, #ov, #umenu, #sres, #fbroot, .fbpanel';
+  const LAYERS = '.ctip, .tlfloat, #ov, #umenu, #sres, #fbroot, .fbpanel';
   const ov = document.getElementById('ov');
   const ovOpen = !!(ov && ov.innerHTML.trim());
   const descr = el => { const cls = typeof el.className === 'string' ? el.className.trim().split(/\s+/).filter(Boolean).slice(0, 3).join('.') : ''; return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (cls ? '.' + cls : ''); };

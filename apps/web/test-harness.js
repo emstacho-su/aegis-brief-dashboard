@@ -940,6 +940,26 @@ function fakeSupabase(db) {
     ok(env.errors.length === 0, 'brief-item: console.error ' + env.errors.slice(0, 3).join(' | '));
     console.log('6. brief-item      trajectory svg, no undefined/NaN/null, timeline merge, bad-date notice, ctx key by text, filters reset per date, direct item load, copy fallback');
   }
+    /* hover details: one trajectory mark per observation carrying the date, tier, score and status; timeline tips float above the strip */
+    {
+      const fetchImpl = async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify(briefs)), manifest: { retained: Object.keys(briefs) } }) });
+      const env = await start({ config: { apiBase: '', mode: 'container' }, fetchImpl });
+      const { run, ctx, els } = env;
+      const go = hash => { ctx.location.hash = hash; run('render()'); };
+      const multi = run("Object.keys(IDX.life).find(id=>IDX.life[id].days.length>=2)");
+      const L = run(`IDX.life['${multi}']`);
+      go('#item-' + multi);
+      const ovh = els.get('ov').innerHTML;
+      const marks = [...ovh.matchAll(/class="clk tpt"[^>]*data-tip="([^"]*)"/g)].map(m => JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')));
+      ok(marks.length === L.days.length, `brief-item: trajectory has ${marks.length} hover marks for ${L.days.length} observations`);
+      ok(marks.length > 0 && marks.every((t, i) => t.t === L.days[i] && ['Tier', 'Score', 'Status'].every(l => t.r.some(r => r.l === l))), 'brief-item: trajectory tips lack the date, tier, score or status');
+      ok(/hover a point for the date and score/.test(ovh), 'brief-item: trajectory legend does not mention hovering');
+      ok(!/\.tl2 \.ev:hover \.tip/.test(fs.readFileSync(HTML, 'utf8')), 'brief-item: the clipped in-place timeline tip rule is still present');
+      ok(run('typeof showTlTip') === 'function' && run('typeof hideTlTip') === 'function', 'brief-item: timeline float helpers missing');
+      run("showTlTip({querySelector:()=>({innerHTML:'<div class=\"d\">2026-09-10</div>Tier 1 · score 90'}),getBoundingClientRect:()=>({left:100,top:300,width:26,height:40,bottom:340,right:126})})");
+      ok(/2026-09-10/.test(run('tlFloatEl&&tlFloatEl.innerHTML')) && run('tlFloatEl&&tlFloatEl.style.display') === 'block', 'brief-item: showTlTip did not render into the float');
+      run('hideTlTip()'); ok(run('tlFloatEl.style.display') === 'none', 'brief-item: hideTlTip did not hide the float');
+    }
   /* --- end regressions: brief-item --- */
 
   /* --- regressions: security --- */

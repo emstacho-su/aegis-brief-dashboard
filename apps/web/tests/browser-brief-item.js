@@ -77,6 +77,51 @@ async function checkDirectItemLoad(browser) {
   await page.close();
 }
 
+async function openLongestPopout(browser, viewport) {
+  const { page, errors } = await open(browser, viewport, '#home');
+  const id = await page.evaluate(() => Object.keys(IDX.life).sort((a, b) => IDX.life[b].days.length - IDX.life[a].days.length)[0]);
+  await page.evaluate(h => { location.hash = h; }, '#item-' + id);
+  await page.waitForSelector('#ov .panel');
+  return { page, errors, id };
+}
+
+/* hover details: the timeline tip floats fully inside the viewport (not clipped by the sideways scroller), and
+   trajectory marks show the date and score on hover and on focus */
+async function checkHoverDetails(browser, viewport, label) {
+  const { page, errors, id } = await openLongestPopout(browser, viewport);
+  const days = await page.evaluate(i => IDX.life[i].days, id);
+  /* trajectory */
+  const marks = page.locator('#ov .tchart .clk');
+  ok(await marks.count() === days.length, `${label}: trajectory has one hover mark per observation (${await marks.count()} for ${days.length})`);
+  if (await marks.count()) {
+    await marks.first().hover();
+    const tip = page.locator('#ov .tchart .ctip');
+    const shown = await tip.isVisible();
+    const tipText = shown ? await tip.innerText() : '';
+    ok(shown && tipText.includes(days[0]) && /Score/.test(tipText) && /Tier/.test(tipText), `${label}: trajectory hover shows the date, tier and score (got "${tipText.replace(/\s+/g, ' ').slice(0, 60)}")`);
+    await page.mouse.move(5, 5);
+    await marks.nth(days.length - 1).focus();
+    ok(await tip.isVisible() && (await tip.innerText()).includes(days[days.length - 1]), `${label}: trajectory mark shows its tip on keyboard focus`);
+    await page.mouse.move(5, 5); await page.keyboard.press('Tab');
+  }
+  /* timeline */
+  const ev = page.locator('#ov .tl2 .ev').first();
+  await ev.scrollIntoViewIfNeeded();
+  await ev.hover();
+  const evDate = (await ev.getAttribute('aria-label') || '').slice(0, 10);
+  const fl = page.locator('.tlfloat');
+  const visible = await fl.isVisible();
+  const box = visible ? await fl.boundingBox() : null;
+  const metrics = visible ? await page.evaluate(() => { const f = document.querySelector('.tlfloat'); const r = f.getBoundingClientRect(); f.style.pointerEvents = 'auto'; const onTop = f.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); f.style.pointerEvents = ''; return { clipped: f.scrollHeight > f.clientHeight + 1, onTop, text: f.innerText, vw: innerWidth, vh: innerHeight }; }) : null;
+  ok(visible && metrics.text.includes(evDate), `${label}: timeline hover shows a floating tip with the icon's date (${evDate})`);
+  ok(visible && box.y >= 0 && box.x >= 0 && box.y + box.height <= metrics.vh && box.x + box.width <= metrics.vw && !metrics.clipped, `${label}: timeline tip is entirely inside the viewport and not clipped (box ${box && JSON.stringify({ x: Math.round(box.x), y: Math.round(box.y), w: Math.round(box.width), h: Math.round(box.height) })})`);
+  ok(visible && metrics.onTop, `${label}: timeline tip is drawn above the popout`);
+  await page.keyboard.press('Escape');
+  ok(!(await fl.isVisible()), `${label}: Escape hides the timeline tip`);
+  ok(errors.length === 0, `${label}: no page errors during hover checks: ${errors.join(' | ')}`);
+  await page.close();
+}
+
 (async () => {
   const browser = await pw.chromium.launch();
   try {
@@ -84,6 +129,8 @@ async function checkDirectItemLoad(browser) {
     await checkRailTable(browser, DESKTOP, '1280');
     await checkRailTable(browser, PHONE, '390');
     await checkDirectItemLoad(browser);
+    await checkHoverDetails(browser, DESKTOP, 'hover 1280');
+    await checkHoverDetails(browser, PHONE, 'hover 390');
   } finally {
     await browser.close();
   }
