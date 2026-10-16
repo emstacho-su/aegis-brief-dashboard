@@ -47,7 +47,9 @@ async function checkSearch(browser) {
   ok(!!active && await page.locator('#' + active + '[role="option"]').count() === 1, 'ArrowDown sets aria-activedescendant to an option');
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => location.hash.startsWith('#item-'));
-  ok(await page.locator('#ov [role="dialog"]').count() > 0, 'Enter opens the item popout');
+  /* the popout renders on the hashchange event, one task after the hash moves, so wait for it rather than count at once */
+  const popout = await page.waitForSelector('#ov [role="dialog"]', { timeout: 5000 }).catch(() => null);
+  ok(!!popout, 'Enter opens the item popout');
   ok(await hidden(page), 'the dropdown is hidden once a result is chosen');
   await page.close();
 
