@@ -138,7 +138,6 @@ h1,h2,h3{text-wrap:balance}
 .side .grp{margin-top:.15rem}
 .side .grp .hd2{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.42rem .6rem;border-radius:var(--radius-md);color:var(--text-primary);font-size:13px;font-weight:600;cursor:pointer;width:100%;text-align:left}
 .side .grp .hd2:hover{background:var(--bg-hover)}
-.side .grp .hd2 .chev{font-family:var(--font-mono);font-size:11px;color:var(--text-muted)}
 /* v1.6.0: the group accordion animates its height (0fr -> 1fr on the grid track); the inner wrapper clips, and
    visibility keeps closed links out of the tab order the way display:none used to. The wrapper's 5px of room
    (padding pulled back by a negative margin, link margins top and bottom) keeps the 3px + 2px focus ring unclipped. */
@@ -1305,7 +1304,7 @@ function renderSide(){
     ${lnk('#brief','brief',"Today's brief",is('brief',state.date===TODAY_S),`<span class="dotc">${esc(TODAY_S.slice(5))}</span>`,'top')}
     ${groups.map(([k,l,icon,href,inner,auto])=>{const open=state.side.has(k)||(auto&&!state.side.has('!'+k));return col
       ?`<div class="grp"><a class="hd2 ${auto?'on':''}" href="${href}" title="${l}"><span class="lb">${I[icon]}</span></a></div>`
-      :`<div class="grp ${open?'open':''}"><button class="hd2" data-grp="${k}" aria-expanded="${open}"><span class="lb">${I[icon]}<span class="tx">${l}</span></span><span class="chev">${open?'▴':'▾'}</span></button><div class="sub"><div class="in">${inner}</div></div></div>`}).join('')}
+      :`<div class="grp ${open?'open':''}"><button class="hd2" data-grp="${k}" aria-expanded="${open}"><span class="lb">${I[icon]}<span class="tx">${l}</span></span></button><div class="sub"><div class="in">${inner}</div></div></div>`}).join('')}
     ${lnk('#trends','trends','Trends',is('trends'),state.report?`<span class="dotc" title="${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}">${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}</span>`:'','top')}</nav>`;
   const side=document.getElementById('side');side.classList.toggle('open',state.sideOpen);side.classList.toggle('collapsed',col);syncMenubtn();restoreFocus(fkey);
   const shell=document.querySelector('.shell');if(shell)shell.classList.toggle('collapsed',col);
@@ -1549,7 +1548,7 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-toastx]')){fb.toast=null;fbRender();return}
   const grp=t.closest('[data-grp]');if(grp){const k=grp.dataset.grp;const open=grp.getAttribute('aria-expanded')==='true';if(open){state.side.delete(k);state.side.add('!'+k)}else{state.side.add(k);state.side.delete('!'+k)}saveSideGroups();
     /* v1.6.0: toggle the existing group in place so the accordion can animate; the next full render agrees with state.side */
-    const g=grp.closest('.grp');if(g&&g.classList){g.classList.toggle('open',!open);grp.setAttribute('aria-expanded',String(!open));const ch=grp.querySelector&&grp.querySelector('.chev');if(ch)ch.textContent=open?'▾':'▴'}else renderSide();return}
+    const g=grp.closest('.grp');if(g&&g.classList){g.classList.toggle('open',!open);grp.setAttribute('aria-expanded',String(!open));}else renderSide();return}
   const mb=t.closest('#menubtn');if(mb){state.sideOpen=!state.sideOpen;renderSide();return}
   if((t.closest('#sideTgl')||(t.closest('#side')&&!t.closest('a,button')))&&window.innerWidth>900){state.sideCollapsed=!state.sideCollapsed;store.set('sidecol',state.sideCollapsed);renderSide();announce(state.sideCollapsed?'Sidebar collapsed':'Sidebar expanded');return}
   if(t.closest('#avatarBtn')){state.umenu=!state.umenu;renderUmenu();return}
