@@ -206,7 +206,7 @@ function fakeSupabase(db) {
     const env = await start({ config: { apiBase: '' }, fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify(one)) }) }) });
     const c = renderAll(env, 'one-brief');
     env.ctx.location.hash = '#trends-movers'; env.run('render()');
-    ok(/Only one brief in the window/.test(env.main().innerHTML) && !/vs d{4}-d{2}-d{2}/.test(env.main().innerHTML), 'movers with a single brief shows dashes / vs today instead of an empty state');
+    ok(/Only one brief in the window/.test(env.main().innerHTML) && !/vs \d{4}-\d{2}-\d{2}/.test(env.main().innerHTML), 'movers with a single brief shows dashes / vs today instead of an empty state');
     console.log(`3c. single brief   views=${c.views} popouts=${c.popouts}`);
   }
   {
@@ -958,6 +958,25 @@ function fakeSupabase(db) {
     console.log('7. security        brief content cannot break out of data-ctx');
   }
   /* --- end regressions: security --- */
+
+  /* --- regressions: review-2 --- */
+  {
+    const fetchImpl = async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify(briefs)), manifest: { retained: Object.keys(briefs) } }) });
+    /* a fresh load whose hash is the skip-link target must still paint a page */
+    const env = makeEnv({ config: { apiBase: '', mode: 'container' }, fetchImpl });
+    env.ctx.location.hash = '#main';
+    env.run(mainScript()); await env.run('booting||Promise.resolve()'); await sleep(40);
+    ok(env.run('BOOTED') && /Your work/.test(env.main().innerHTML), 'review-2: a boot on #main left the loader in place');
+    ok(env.ctx.location.hash === '#home', 'review-2: #main was not rewritten to #home at boot, got ' + env.ctx.location.hash);
+    /* an unknown report id shows the catalog with a notice instead of a thrown render */
+    env.ctx.location.hash = '#trends-bogus'; env.run('render()');
+    const html = env.main().innerHTML;
+    ok(!/failed to render/.test(html) && /No report named/.test(html) && /class="rcat"/.test(html), 'review-2: #trends-bogus did not fall back to the catalog with a notice');
+    ok(env.ctx.location.hash === '#trends', 'review-2: unknown report hash not normalised, got ' + env.ctx.location.hash);
+    ok(env.errors.length === 0, 'review-2 console.error: ' + env.errors.slice(0, 2).join(' | '));
+    console.log('8. review-2        boot on #main paints, unknown report falls back to the catalog');
+  }
+  /* --- end regressions: review-2 --- */
 
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);

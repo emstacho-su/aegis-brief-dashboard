@@ -876,7 +876,7 @@ function outstandingTable(rows,o={}){
     return `<tr><td class="age num ${r.days>=7?'old':''}">${r.days}d</td><td>${esc(r.text)}<div class="mono muted" style="font-size:11px">raised ${esc(r.raised)} · ${areaChips(r.areas)}</div></td><td>${x?`<a href="#item-${esc(r.origin)}">${esc(x.it.title)}</a>`:esc(r.origin)}</td></tr>`}).join('')}</tbody></table></div>`;
 }
 function ctxKeys(key,arr){ /* text-keyed so the open state follows an entry across dates; a repeated title gets #2, #3 so entries never share a key */
-  const seen={};return (arr||[]).map(x=>{const n=seen[x.t]=(seen[x.t]||0)+1;return key+':'+x.t+(n>1?'#'+n:'')});
+  const seen=Object.create(null);return (arr||[]).map(x=>{const n=seen[x.t]=(seen[x.t]||0)+1;return key+':'+x.t+(n>1?'#'+n:'')});
 }
 function ctxCard(key,title,arr,extra){const keys=ctxKeys(key,arr);
   if(!arr||!arr.length)return `<div class="card absent"><h3>${title}</h3><div class="s">Not included in this brief</div></div>`;
@@ -1095,7 +1095,14 @@ const THUMB_SERIES={
  cve:()=>{const cves=Object.values(IDX.life).filter(L=>L.identifiers.some(x=>/^CVE-/.test(x)));return DATES.map(d=>cves.filter(L=>L.days.includes(d)).length)},
  quiet:()=>Object.keys(AREAS).map(k=>{const st=areaStats(k,BRIEFS[TODAY_S]);return st.lastT1===null?30:st.lastT1}).sort((p,q)=>q-p)
 };
-function thumbHeights(id){let v=[];try{v=(THUMB_SERIES[id]||(()=>[]))().slice(-THUMB_POINTS).filter(Number.isFinite)}catch(e){console.error('thumbnail '+id+': '+e.message)}
+const THUMB_CACHE={key:'',v:{}};
+function thumbHeights(id){ /* the series only change with the archive, the period or the Trends area filter */
+  const ck=[state.f.period,state.f.tarea||'',DATES.length,TODAY_S].join('|');
+  if(THUMB_CACHE.key!==ck){THUMB_CACHE.key=ck;THUMB_CACHE.v={}}
+  if(!THUMB_CACHE.v[id])THUMB_CACHE.v[id]=thumbHeightsRaw(id);
+  return THUMB_CACHE.v[id];
+}
+function thumbHeightsRaw(id){let v=[];try{v=(THUMB_SERIES[id]||(()=>[]))().slice(-THUMB_POINTS).filter(Number.isFinite)}catch(e){console.error('thumbnail '+id+': '+e.message)}
   const mx=Math.max(0,...v),mn=Math.min(...v);if(v.length<2||mx<=0||mn===mx)return Array(THUMB_FLAT_BARS).fill(1); /* empty, one point or constant: a flat line */
   return v.map(x=>Math.round(x/mx*THUMB_MAX*10)/10)}
 function periodDays(){const n=state.f.period;return DATES.slice(Math.max(0,DATES.length-n))}
@@ -1111,8 +1118,12 @@ function selItems(items){if(!items.length)return '';const all=items.length<=SEL_
   return `<div class="selbar">${all?'':`Showing ${SEL_CAP} of `}${items.length} matching item${items.length===1?'':'s'}${all?'':` <button class="btn sm" data-selall>Show all ${items.length}</button>`}</div><div class="stack">${shown.map(i=>itemCard(i,{forceLevel:0,directOpen:true,showAreas:true,showTier:true})).join('')}</div>`}
 function dataTable(head,rows){return `<div class="tw" style="margin-top:.7rem"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
 function moverRows(filter){const d0=DATES[Math.max(0,DATES.length-8)];const todayIn=BRIEFS[TODAY_S].items.filter(filter);const rows=todayIn.map(i=>{const p=BRIEFS[d0].items.find(x=>x.item_id===i.item_id);const a=p?p.score:(IDX.life[i.item_id].scores[0]);return {key:i.item_id,label:i.title.length>28?i.title.slice(0,27)+'…':i.title,full:i.title,a,b:i.score,d:i.score-a}}).filter(r=>r.d!==0).sort((p,q)=>Math.abs(q.d)-Math.abs(p.d)).slice(0,12);return {d0,todayIn,rows}}
+function unknownReport(id){ /* a stale or mistyped #trends-<id>: the catalog with a notice, not a thrown render */
+  state.report=null;try{history.replaceState(history.state,'',location.pathname+location.search+'#trends')}catch(e){console.error('AEGIS could not normalise the hash',e)}
+  return `<div class="banner-err" role="alert">No report named "${esc(id)}". Showing all reports.</div>`+renderTrends();
+}
 function renderReport(id){
-  const days=periodDays();const r=REPORTS.find(x=>x.id===id);let chart='',extra='',table='',kpis='';const sel=state.sel;
+  const days=periodDays();const r=REPORTS.find(x=>x.id===id);if(!r)return unknownReport(id);let chart='',extra='',table='',kpis='';const sel=state.sel;
   const evIn=(d,t)=>IDX.events.filter(e=>e.date===d&&e.type===t&&inArea(e));
   if(id==='newres'){const pd=prevDays();let nw=days.map(d=>evIn(d,'new').length),dr=days.map(d=>evIn(d,'dropped').length);const pn=pd.reduce((a,d)=>a+evIn(d,'new').length,0),pdr=pd.reduce((a,d)=>a+evIn(d,'dropped').length,0);const tn=nw.reduce((a,c)=>a+c,0),td=dr.reduce((a,c)=>a+c,0);
     kpis=kpiRow([{label:'New items',value:tn,prev:pd.length?pn:undefined,help:'Items that entered the brief in the period'},{label:'Dropped',value:td,prev:pd.length?pdr:undefined,help:'Items that left the brief in the period'},{label:'Net change',text:(tn-td>0?'+':'')+(tn-td),sub:tn-td>0?'backlog growing':tn-td<0?'backlog shrinking':'flat',help:'New minus dropped'},{label:'New per brief',value:days.length?tn/days.length:0,prev:pd.length?pn/pd.length:undefined}],cmpLabel());
@@ -1157,8 +1168,8 @@ function renderReport(id){
     chart=groupedBars(rows,[{cls:'c-a',label:'this period',values:rows.map(r=>r.value)},{cls:'c-b',label:'previous period',values:rows.map(r=>r.prev)}],sel,{label:'Items by source, this period vs previous'})+`<div class="legend"><span><i class="i-a"></i>this period</span><span><i class="i-b"></i>previous period</span>${clickHint('a bar')}</div>`;
     if(sel)extra=selItems(Object.values(IDX.life).filter(L=>L.sources.includes(sel)&&inArea(L)&&L.days.some(dd=>days.includes(dd))).map(L=>itemAny(L.id).it).sort((p,q)=>q.score-p.score));
     table=dataTable(['Source','Items','Previous period','Reached Tier 1'],rows.map(r=>[esc(r.label),r.value,r.prev,r.sub]));}
-  else if(id==='actionsage'&&HAS_REAL){const ex=BRIEFS[TODAY_S].exposure.filter(r=>r.state!=='mitigated'&&(!state.f.tarea||(r.areas||[]).includes(state.f.tarea)));const pd=prevDays();const pb=pd.length?BRIEFS[pd[pd.length-1]].exposure.filter(r=>r.state!=='mitigated'&&(!state.f.tarea||(r.areas||[]).includes(state.f.tarea))):null;
-    kpis=kpiRow([{label:'Open exposure rows',value:ex.length,prev:pb?pb.length:undefined,lowerIsBetter:true},{label:'Confirmed vulnerable',value:ex.filter(r=>r.state==='vulnerable').length,prev:pb?pb.filter(r=>r.state==='vulnerable').length:undefined,lowerIsBetter:true},{label:'Unchanged 14d+',value:ex.filter(r=>r.days!=null&&r.days>=14).length,prev:pb?pb.filter(r=>r.days!=null&&r.days>=14).length:undefined,lowerIsBetter:true},{label:'Unverified',value:ex.filter(r=>r.state==='unverified').length,prev:pb?pb.filter(r=>r.state==='unverified').length:undefined,lowerIsBetter:true}],pd.length?`vs ${pd[pd.length-1]}`:'');const bins=EXPOSURE_BINS.map(([a,b,l])=>({key:l,label:l,a,b,n:ex.filter(x=>x.days!=null&&x.days>=a&&x.days<=b).length}));
+  else if(id==='actionsage'&&HAS_REAL){const ex=BRIEFS[TODAY_S].exposure.filter(r=>r.state!=='mitigated'&&(!state.f.tarea||(r.areas||[]).includes(state.f.tarea)));const prevBrief=DATES.length>1?DATES[DATES.length-2]:null;const pb=prevBrief?BRIEFS[prevBrief].exposure.filter(r=>r.state!=='mitigated'&&(!state.f.tarea||(r.areas||[]).includes(state.f.tarea))):null;
+    kpis=kpiRow([{label:'Open exposure rows',value:ex.length,prev:pb?pb.length:undefined,lowerIsBetter:true},{label:'Confirmed vulnerable',value:ex.filter(r=>r.state==='vulnerable').length,prev:pb?pb.filter(r=>r.state==='vulnerable').length:undefined,lowerIsBetter:true},{label:'Unchanged 14d+',value:ex.filter(r=>r.days!=null&&r.days>=14).length,prev:pb?pb.filter(r=>r.days!=null&&r.days>=14).length:undefined,lowerIsBetter:true},{label:'Unverified',value:ex.filter(r=>r.state==='unverified').length,prev:pb?pb.filter(r=>r.state==='unverified').length:undefined,lowerIsBetter:true}],prevBrief?`vs ${prevBrief} (previous brief)`:'');const bins=EXPOSURE_BINS.map(([a,b,l])=>({key:l,label:l,a,b,n:ex.filter(x=>x.days!=null&&x.days>=a&&x.days<=b).length}));
     chart=histogram(bins,sel)+`<div class="legend"><span class="muted">exposure register rows (not mitigated) by days unchanged, today (${ex.length}; ${ex.filter(x=>x.days==null).length} without a day count)</span>${clickHint('a bar',{does:'list its rows'})}</div>`;
     if(sel){const bn=bins.find(x=>x.key===sel);if(bn)extra=`<div class="selbar">${bn.n} row${bn.n===1?'':'s'}</div>`+exposureTable(ex.filter(x=>x.days!=null&&x.days>=bn.a&&x.days<=bn.b))}
     table=exposureTable(ex);}
@@ -1304,7 +1315,9 @@ function closeUmenu(focusBtn){state.umenu=false;renderUmenu();if(focusBtn){const
 function resetAll(){ /* everything this page keeps in the browser, back to first-visit state */
   myAreas=new Set();stars=new Set();viewed=[];fb.list=[];state.coll=new Set();state.sideCollapsed=false;state.side=new Set();
   ['my','stars','viewed','coll','sidecol','sidegrp','feedback'].forEach(k=>{try{localStorage.removeItem(STORE_NS+k)}catch(e){console.error('AEGIS could not remove '+STORE_NS+k,e)}});
-  setTheme('system');scheduleSettingsSync();fbRender();render();announce('Everything saved in this browser was reset');
+  const was=applyingRemote;applyingRemote=true;try{setTheme('system')}finally{applyingRemote=was} /* no push: the account's settings must survive a local reset */
+  fbRender();render();const signedIn=!!(SB&&userId());if(signedIn&&typeof pullSettings==='function')pullSettings();
+  announce('Everything saved in this browser was reset'+(signedIn?'. Your account settings were left alone.':''));
 }
 function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.umenu;document.getElementById('avatarBtn').setAttribute('aria-expanded',String(state.umenu));renderAvatar();renderAuthGate();
   const em=userEmail();const gated=signedOutGate();   /* signed out behind requireAuth: the quick links would do nothing, so they are not offered */
@@ -1413,7 +1426,7 @@ function flipRender(){
 }
 function render(){
   if(!BOOTED){state.anim=null;return}
-  if(location.hash==='#main'){skipToMain();return} /* the loader (boot) owns #main until data is in */
+  if(location.hash==='#main'){skipToMain();if(PAGE_PAINTED)return} /* a fresh load on #main falls through and paints the page the hash was rewritten to */ /* the loader (boot) owns #main until data is in */
   if(needAuth()&&SESSION&&!PW_SET){state.anim=null;showSetPassword(true);return}
   try{renderInner();fitTwo()}catch(e){
     if(typeof console!=='undefined')console.error('AEGIS render failed',e);
@@ -1432,7 +1445,8 @@ function focusKey(el){
   if(!el||!el.hasAttribute||(el.closest&&el.closest('#ov')))return null; /* the popout manages its own focus */
   if(el.id)return '#'+el.id;
   const a=FOCUS_ATTRS.find(x=>el.hasAttribute(x));
-  return a?`[${a}="${String(el.getAttribute(a)).replace(/["\\]/g,'\\$&')}"]`:null;
+  const scope=!el.closest?'':el.closest('.rail')?'.rail ':el.closest('#sres')?'#sres ':el.closest('#side')?'#side ':el.closest('#umenu')?'#umenu ':'';
+  return a?`${scope}[${a}="${String(el.getAttribute(a)).replace(/["\\]/g,'\\$&')}"]`:null;
 }
 function restoreFocus(key){
   if(!key)return;let el=null;try{el=document.querySelector(key)}catch(e){return}
@@ -1751,7 +1765,7 @@ const SIGNIN_FIRST_TITLE='Sign in first',FB_BTN_TITLE='Report a bug or request a
    tokens in the hash plus no session is how an unverifiable link shows itself */
 function noteUnverifiedLink(h){if(!SESSION&&!AUTH_ERR&&/(^#|&)access_token=/.test(h))AUTH_NOTICE=LINK_FAIL_MSG}
 /* a dropped connection surfaces as a TypeError or supabase-js's fetch error; provider errors keep their own text */
-function isNetworkFailure(e){const n=String(e&&e.name||''),m=String(e&&e.message||e);return n==='TypeError'||/FetchError/i.test(n)||/failed to fetch|networkerror|network request failed|load failed/i.test(m)}
+function isNetworkFailure(e){const n=String(e&&e.name||''),m=String(e&&e.message||e);return /FetchError/i.test(n)||/failed to fetch|networkerror|network request failed|load failed/i.test(m)}
 function clearInvalid(...els){els.forEach(el=>{if(el&&el.removeAttribute)el.removeAttribute('aria-invalid')})}
 function signedOutGate(){return needAuth()&&!SESSION}
 /* while the sign-in card is the only thing on screen, search and feedback have nothing to act on */

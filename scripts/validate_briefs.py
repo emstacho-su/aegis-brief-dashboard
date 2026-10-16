@@ -15,6 +15,8 @@ import re
 import sys
 from pathlib import Path
 
+from collections import Counter
+
 import jsonschema
 
 REPO = Path(__file__).resolve().parent.parent
@@ -34,8 +36,11 @@ def duplicate_ids(data: object) -> list[str]:
     items = data.get("items") if isinstance(data, dict) else None
     if not isinstance(items, list):
         return []
+    # Same rule as aegis_worker.schema.duplicate_item_id_problems (kept separate so this script needs only
+    # jsonschema); keep the two in step when the rule changes.
     ids = [i.get("item_id") for i in items if isinstance(i, dict) and isinstance(i.get("item_id"), str)]
-    return [f"items: duplicate item_id {x!r}" for x in dict.fromkeys(ids) if ids.count(x) > 1]
+    counts = Counter(ids)
+    return [f"items: duplicate item_id {x!r}" for x, n in counts.items() if n > 1]
 
 
 def main() -> int:
