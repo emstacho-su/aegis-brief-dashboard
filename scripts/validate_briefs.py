@@ -34,7 +34,7 @@ def duplicate_ids(data: object) -> list[str]:
     items = data.get("items") if isinstance(data, dict) else None
     if not isinstance(items, list):
         return []
-    ids = [i.get("item_id") for i in items if isinstance(i, dict)]
+    ids = [i.get("item_id") for i in items if isinstance(i, dict) and isinstance(i.get("item_id"), str)]
     return [f"items: duplicate item_id {x!r}" for x in dict.fromkeys(ids) if ids.count(x) > 1]
 
 

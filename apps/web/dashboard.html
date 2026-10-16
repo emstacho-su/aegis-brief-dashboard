@@ -76,7 +76,7 @@ h1,h2,h3{text-wrap:balance}
 .sres .r .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sres .r .m{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);white-space:nowrap}
 .sres .none{padding:.6rem .75rem;color:var(--text-muted);font-size:12px}
-.sres .r.on,.sres .r[aria-selected="true"]{background:var(--bg-secondary)}
+.sres .r[aria-selected="true"]{background:var(--bg-secondary)}
 .plus{width:32px;height:32px;border-radius:50%;border:1px solid var(--border-hover);color:var(--text-primary);display:grid;place-items:center;font-size:18px;line-height:1;cursor:pointer;background:var(--bg-primary)}
 .plus:hover{border-color:var(--accent);color:var(--accent)}
 .fbov{position:fixed;inset:0;z-index:70;cursor:crosshair;background:var(--overlay);opacity:.45}
@@ -863,9 +863,12 @@ function outstandingTable(rows,o={}){
   return `<div class="tw"><table><thead><tr><th>Open</th><th>Action</th><th>From</th></tr></thead><tbody>${rows.map(r=>{const x=itemAny(r.origin);
     return `<tr><td class="age num ${r.days>=7?'old':''}">${r.days}d</td><td>${esc(r.text)}<div class="mono muted" style="font-size:11px">raised ${esc(r.raised)} · ${areaChips(r.areas)}</div></td><td>${x?`<a href="#item-${esc(r.origin)}">${esc(x.it.title)}</a>`:esc(r.origin)}</td></tr>`}).join('')}</tbody></table></div>`;
 }
-function ctxCard(key,title,arr,extra){
+function ctxKeys(key,arr){ /* text-keyed so the open state follows an entry across dates; a repeated title gets #2, #3 so entries never share a key */
+  const seen={};return (arr||[]).map(x=>{const n=seen[x.t]=(seen[x.t]||0)+1;return key+':'+x.t+(n>1?'#'+n:'')});
+}
+function ctxCard(key,title,arr,extra){const keys=ctxKeys(key,arr);
   if(!arr||!arr.length)return `<div class="card absent"><h3>${title}</h3><div class="s">Not included in this brief</div></div>`;
-  return `<div class="card"><h3>${title}</h3><ul class="ctx">${arr.map((x,i)=>{const k=key+':'+x.t,open=state.ctx.has(k);return `<li class="${open?'open':''}"><div class="one" data-ctx="${esc(k)}" role="button" tabindex="0" aria-expanded="${open}"><span class="tx">${esc(x.t)}</span><span class="cv" aria-hidden="true">${open?'▴':'▾'}</span></div><p class="more">${esc(x.d)}</p><div class="s">${extra?extra(x):esc(x.s)}</div></li>`}).join('')}</ul></div>`;
+  return `<div class="card"><h3>${title}</h3><ul class="ctx">${arr.map((x,i)=>{const k=keys[i],open=state.ctx.has(k);return `<li class="${open?'open':''}"><div class="one" data-ctx="${esc(k)}" role="button" tabindex="0" aria-expanded="${open}"><span class="tx">${esc(x.t)}</span><span class="cv" aria-hidden="true">${open?'▴':'▾'}</span></div><p class="more">${esc(x.d)}</p><div class="s">${extra?extra(x):esc(x.s)}</div></li>`}).join('')}</ul></div>`;
 }
 function contextCards(b){const c=b.context;return `<div class="stack">${ctxCard('geo','Geopolitical & threat context',c.geopolitical)}${ctxCard('ai','AI watch',c.ai_watch)}${ctxCard('wl','Watchlist',c.watchlist,x=>`since ${esc(x.since)} · trigger: ${esc(x.trigger)}`)}</div>`}
 function feedsText(r){return Number.isFinite(r.feeds_fresh)&&Number.isFinite(r.feeds_total)?`feeds ${r.feeds_fresh}/${r.feeds_total} fresh`:'feeds n/a'}
@@ -1245,7 +1248,7 @@ function closeDrawer(focusBtn){state.sideOpen=false;const s=document.getElementB
 function closeUmenu(focusBtn){state.umenu=false;renderUmenu();if(focusBtn){const b=document.getElementById('avatarBtn');if(b)b.focus()}}
 function resetAll(){ /* everything this page keeps in the browser, back to first-visit state */
   myAreas=new Set();stars=new Set();viewed=[];fb.list=[];state.coll=new Set();state.sideCollapsed=false;
-  ['my','stars','viewed','coll','sidecol','feedback'].forEach(k=>{try{localStorage.removeItem(STORE_NS+k)}catch(e){}});
+  ['my','stars','viewed','coll','sidecol','feedback'].forEach(k=>{try{localStorage.removeItem(STORE_NS+k)}catch(e){console.error('AEGIS could not remove '+STORE_NS+k,e)}});
   setTheme('system');scheduleSettingsSync();fbRender();render();announce('Everything saved in this browser was reset');
 }
 function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.umenu;document.getElementById('avatarBtn').setAttribute('aria-expanded',String(state.umenu));renderAvatar();
@@ -1300,8 +1303,7 @@ function curTheme(){try{return localStorage.getItem('aegis4-theme')||'system'}ca
 const SEARCH_MAX=8,SEARCH_GAP_PX=6,SEARCH_EDGE_PX=16,SEARCH_WIDE_PX=420;
 let searchRows=[],searchActive=-1;
 function searchMatches(q){q=q.trim().toLowerCase();if(q.length<2)return [];return Object.values(IDX.life).filter(L=>L.title.toLowerCase().includes(q)||L.identifiers.some(x=>x.toLowerCase().includes(q))).sort((p,q2)=>q2.last_seen.localeCompare(p.last_seen)||q2.maxScore-p.maxScore)}
-function searchItems(q){return searchMatches(q).slice(0,SEARCH_MAX)}
-function searchClose(){const box=document.getElementById('sres'),q=document.getElementById('q');if(box)box.hidden=true;searchActive=-1;if(q){q.setAttribute('aria-expanded','false');q.removeAttribute('aria-activedescendant')}}
+function searchClose(){const box=document.getElementById('sres'),q=document.getElementById('q');if(box)box.hidden=true;searchRows=[];searchActive=-1;if(q){q.setAttribute('aria-expanded','false');q.removeAttribute('aria-activedescendant')}}
 /* the list hangs off the right edge of the search box; when that would leave the viewport (narrow header), pin it to the page margins under the input instead */
 function searchPlace(q,box){if(typeof q.getBoundingClientRect!=='function')return;
   const host=(q.closest&&q.closest('.search')||q).getBoundingClientRect(),vw=window.innerWidth,w=Math.min(SEARCH_WIDE_PX,vw*.88);
@@ -1362,10 +1364,10 @@ function render(){
 }
 /* MAIN_STALE: #main still holds the loader skeleton (showLoading) and must be painted before an overlay opens over it,
    for example when the page boots on an #item- link. lastItemKey: the popout plays its entrance only for a new item. */
-let MAIN_STALE=false,lastItemKey=null;
-function paintMain(){const main=document.getElementById('main');main.innerHTML=state.page==='home'?renderHome():state.page==='area'?renderArea():state.page==='brief'?renderBrief():state.page==='trends'?renderTrends():renderArchive();markViewEnter(main);MAIN_STALE=false}
+let MAIN_STALE=false,lastItemKey=null,PAGE_PAINTED=false; /* PAGE_PAINTED: a page has been painted under the overlay at least once */
+function paintMain(){PAGE_PAINTED=true;const main=document.getElementById('main');main.innerHTML=state.page==='home'?renderHome():state.page==='area'?renderArea():state.page==='brief'?renderBrief():state.page==='trends'?renderTrends():renderArchive();markViewEnter(main);MAIN_STALE=false}
 /* Focus survives a re-render: remember the focused control by id or data attribute, find its twin afterwards. */
-const FOCUS_ATTRS=['data-tab','data-my','data-star','data-collapse','data-expand','data-open','data-grp','data-coll','data-f','data-ctx','data-fbdel','data-retry','data-streamall','data-exp','data-col','data-clear'];
+const FOCUS_ATTRS=['data-tab','data-my','data-star','data-collapse','data-expand','data-open','data-grp','data-coll','data-f','data-ctx','data-fbdel','data-retry','data-streamall','data-exp','data-col','data-clear','data-collbtn','data-cum','data-clearsel','data-streamless','data-pick'];
 function focusKey(el){
   if(!el||!el.hasAttribute||(el.closest&&el.closest('#ov')))return null; /* the popout manages its own focus */
   if(el.id)return '#'+el.id;
@@ -1377,12 +1379,20 @@ function restoreFocus(key){
   if(el&&el!==document.activeElement&&el.focus)el.focus({preventScroll:true});
 }
 function skipToMain(){ /* #main is the skip-link target, not a route: keep the page, move focus */
-  try{history.replaceState(history.state,'',location.pathname+location.search+pageHash())}catch(e){}
+  if(lastItemKey!==null){lastItemKey=null;document.getElementById('ov').innerHTML='';document.body.classList.remove('locked')} /* the hash has left #item-, so the popout must go with it */
+  try{history.replaceState(history.state,'',location.pathname+location.search+pageHash())}catch(e){console.error('AEGIS could not normalise the hash',e)}
   const m=document.getElementById('main');if(m)m.focus();
 }
 function mainIsEmpty(){const m=document.getElementById('main');return !m||!String(m.innerHTML).trim()}
 function paintBeneath(id){ /* a direct #item- load: nothing is on the page yet, so paint the item's own brief (its latest, today's when it is in it) and closing the popout lands on a real page */
   const x=itemAny(id);Object.assign(state,{page:'brief',date:x&&BRIEFS[x.date]?x.date:TODAY_S});paintMain();
+}
+function timelineScroll(){ /* scrollLeft of the open popout's timeline, or null when there is none */
+  let w=null;try{w=document.querySelector('#ov .tl2wrap')}catch(e){return null}
+  return w&&typeof w.scrollLeft==='number'?w.scrollLeft:null;
+}
+function keepTimelineScroll(x){ /* a re-render rebuilds the timeline; put it back where the reader left it */
+  if(x==null)return;try{document.querySelectorAll('#ov .tl2wrap').forEach(w=>{w.scrollLeft=x})}catch(e){console.error('AEGIS timeline scroll failed',e)}
 }
 function revealTimelineToday(){ /* a timeline wider than its card starts scrolled to the right edge so the TODAY marker is in view */
   try{document.querySelectorAll('#ov .tl2wrap').forEach(w=>{w.scrollLeft=w.scrollWidth})}catch(e){console.error('AEGIS timeline scroll failed',e)}
@@ -1396,16 +1406,16 @@ function applyBriefNotice(h,route){ /* the notice stays while today's brief is r
   if(route.notice){state.notice=route.notice;try{history.replaceState(null,'','#brief')}catch(e){console.error('AEGIS could not normalise the hash',e)}return}
   if(!(h.page==='brief'&&state.page==='brief'&&h.date===TODAY_S&&state.date===TODAY_S))state.notice=null;
 }
-function resetBriefFilters(){ /* filters belong to one date's list; carrying them to another date can strand the user on "No items match." */
-  state.f={...state.f,area:null,tier:null,status:null,source:null};
+function resetBriefFilters(){ /* tier/status/source belong to one date's list; carrying them to another date can strand the user on "No items match.". The area filter is shared with the Home stream, so it stays. */
+  state.f={...state.f,tier:null,status:null,source:null};
 }
 function renderInner(){
   const h=parseHash();
   const fkey=h.item?null:focusKey(document.activeElement);
-  if(h.item){/* overlay over current page */ lastOpener=h.item;markViewed(h.item);if(MAIN_STALE||mainIsEmpty())paintBeneath(h.item);const fresh=h.item!==lastItemKey;lastItemKey=h.item;document.getElementById('ov').innerHTML=renderDetail(h.item,fresh);document.body.classList.add('locked');if(fresh)revealTimelineToday();const c=document.querySelector('#ov .close');if(c)c.focus()}
+  if(h.item){/* overlay over current page */ lastOpener=h.item;markViewed(h.item);if(MAIN_STALE||mainIsEmpty()){if(PAGE_PAINTED)paintMain();else paintBeneath(h.item)}const fresh=h.item!==lastItemKey;lastItemKey=h.item;const tlScroll=timelineScroll();document.getElementById('ov').innerHTML=renderDetail(h.item,fresh);document.body.classList.add('locked');if(fresh)revealTimelineToday();else keepTimelineScroll(tlScroll);const c=document.querySelector('#ov .close');if(c)c.focus()}
   else{lastItemKey=null;const route=resolveBriefRoute(h);applyBriefNotice(h,route);if(route.date&&route.date!==state.date)resetBriefFilters();Object.assign(state,{page:h.page});if(route.date)state.date=route.date;if(h.area!==undefined)state.area=h.area;if(h.report!==undefined){if(state.report!==h.report)state.sel=null;state.report=h.report}
     document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
-    if(h.unknown){try{history.replaceState(history.state,'',location.pathname+location.search+'#home')}catch(e){}}
+    if(h.unknown){try{history.replaceState(history.state,'',location.pathname+location.search+'#home')}catch(e){console.error('AEGIS could not normalise the hash',e)}}
     paintMain()}
   renderSide();renderRibbon();renderUmenu();
   restoreFocus(fkey);
@@ -1518,7 +1528,6 @@ const DBLCLICK_MS=350;let lastMarkClick=null;
 function markClick(mk,e){const key=mk.dataset.day||mk.dataset.key;const prev=lastMarkClick;lastMarkClick=e.detail>0?{key,at:e.timeStamp}:null;
   if(prev&&prev.key===key&&AREAS[key]&&e.timeStamp-prev.at<DBLCLICK_MS){lastMarkClick=null;location.hash='#area-'+key;return}
   state.sel=state.sel===key?null:key;flipRender()}
-document.addEventListener('dblclick',e=>{const mk=e.target.closest('.chart .clk');if(mk&&mk.dataset.key&&AREAS[mk.dataset.key]){location.hash='#area-'+mk.dataset.key}});
 document.addEventListener('change',e=>{const s=e.target.closest('[data-f]');if(s){const k=s.dataset.f;const v=s.value;state.f[k]=v===''?null:(k==='tier'||k==='period'?Number(v):v);if(k==='period'||k==='area'||k==='tarea')state.sel=null;flipRender()}});
 document.addEventListener('keydown',e=>{
   if((e.key==='Enter'||e.key===' ')&&e.target.matches&&(e.target.matches('.chart .clk')||e.target.matches('[data-ctx]')||e.target.matches('.rcardi')||e.target.matches('tr[data-openrow]'))){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));return}
