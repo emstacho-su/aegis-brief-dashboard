@@ -653,6 +653,92 @@ function fakeSupabase(db) {
   }
   /* --- end regressions: archive-search-feedback --- */
 
+  /* --- regressions: brief-item --- */
+  {
+    const fetchImpl = async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify(briefs)), manifest: { retained: Object.keys(briefs) } }) });
+    const env = await start({ config: { apiBase: '', mode: 'container' }, fetchImpl });
+    const { run, ctx, els } = env;
+    const go = hash => { ctx.location.hash = hash; run('render()'); };
+    const multi = run("Object.keys(IDX.life).find(id=>IDX.life[id].days.length>=2)");
+    ok(!!multi, 'brief-item: no multi-observation item in the container data');
+    /* trajectory returns its svg, and no popout shows a bare undefined/NaN/null */
+    const traj = run(`trajectory(IDX.life['${multi}'])`);
+    ok(typeof traj === 'string' && /<svg[^>]*aria-label="Score trajectory"/.test(traj), 'brief-item: trajectory() did not return the svg string');
+    go('#item-' + multi);
+    ok(els.get('ov').innerHTML.includes('aria-label="Score trajectory"'), 'brief-item: popout lacks the trajectory svg');
+    const strip = h => h.replace(/<[^>]+>/g, ' ');
+    const bad = run('Object.keys(IDX.life)').filter(id => { go('#item-' + id); return /\b(undefined|NaN|null)\b/.test(strip(els.get('ov').innerHTML)); });
+    ok(bad.length === 0, 'brief-item: popouts show undefined/NaN/null: ' + bad.slice(0, 3).join(','));
+    /* timeline: same-day observations merge into one icon; the later tier wins and escalation is kept */
+    const tl = run(`(()=>{const L=JSON.parse(JSON.stringify(IDX.life['${multi}']));const d0=L.days[0],d1=L.days.find(d=>d!==d0);L.days=[d0,d0,d1];L.tiers=[2,1,3];L.scores=[40,60,50];L.escDays=[d0];
+      return timeline(L,itemAny('${multi}').it)})()`);
+    const icons = tl.match(/class="ev [^"]*"/g).filter(c => !/cve/.test(c));
+    ok(icons.length === 2, 'brief-item: duplicate same-day observations produced ' + icons.length + ' icons, expected 2');
+    ok(/ev [^"]*t1 esc/.test(icons[0]), 'brief-item: merged icon did not take the later tier and keep escalation: ' + icons[0]);
+    ok(/class="tl2wrap"[^>]*tabindex="0"/.test(tl), 'brief-item: timeline wrapper is not a focusable scroll region');
+    /* bad brief hash: notice, today rendered, hash normalised */
+    go('#brief-2026-01-01');
+    ok(env.main().innerHTML.includes('No brief for 2026-01-01; showing today') && ctx.location.hash === '#brief' && run('state.date') === run('TODAY_S'), 'brief-item: bad date did not show the notice and normalise the hash (hash ' + ctx.location.hash + ')');
+    run('render()');
+    ok(env.main().innerHTML.includes('No brief for 2026-01-01'), 'brief-item: notice lost on re-render');
+    go('#home'); go('#brief');
+    ok(!env.main().innerHTML.includes('No brief for'), 'brief-item: notice survived navigating away');
+    /* context open state follows the entry text, not its position */
+    const pair = run(`(()=>{const ds=DATES.filter(d=>BRIEFS[d].context&&BRIEFS[d].context.geopolitical&&BRIEFS[d].context.geopolitical.length);for(let i=0;i<ds.length;i++)for(let j=0;j<ds.length;j++){const a=BRIEFS[ds[i]].context.geopolitical,b=BRIEFS[ds[j]].context.geopolitical;if(a[0].t!==b[0].t&&!b.some(x=>x.t===a[0].t))return [ds[i],ds[j],a[0].t]}return null})()`);
+    ok(!!pair, 'brief-item: no date pair with differing first context entries');
+    if (pair) {
+      go('#brief-' + pair[0]);
+      const key = (env.main().innerHTML.match(/data-ctx="([^"]+)"/) || [])[1];
+      const keyText = key && key.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+      ok(!!key && keyText.includes(pair[2]), 'brief-item: context key is not derived from the entry text: ' + key);
+      run(`state.ctx.add(${JSON.stringify(keyText)})`);
+      run('render()');
+      ok(/<li class="open">/.test(env.main().innerHTML), 'brief-item: opened context entry is not open after render');
+      go('#brief-' + pair[1]);
+      ok(!/<li class="open">/.test(env.main().innerHTML), 'brief-item: opening a context entry carried to a different entry on another date');
+      go('#brief-' + pair[0]);
+      ok(/<li class="open">/.test(env.main().innerHTML), 'brief-item: context entry lost its open state on return to its date');
+    }
+    /* filters reset when the brief date changes, and persist on a re-render of the same date */
+    go('#brief');
+    run('state.f.tier=3;state.f.status="new";state.f.area="perimeter"');
+    run('render()');
+    ok(run('state.f.tier') === 3, 'brief-item: filters cleared by a same-date re-render');
+    go('#brief-' + run('DATES[DATES.length-2]'));
+    ok(run('state.f.tier') === null && run('state.f.status') === null && run('state.f.area') === null, 'brief-item: filters carried to another date');
+    /* direct #item- load paints the page beneath the overlay */
+    run("document.getElementById('main').innerHTML=''");
+    go('#item-' + multi);
+    ok(/Daily brief/.test(env.main().innerHTML) && /role="dialog"/.test(els.get('ov').innerHTML), 'brief-item: direct #item- load left #main empty beneath the overlay');
+    run('closeOv()');
+    ok(/^#brief/.test(ctx.location.hash), 'brief-item: closing a direct item load did not land on a brief, got ' + ctx.location.hash);
+    /* copy buttons: a rejecting clipboard falls back to selecting the value and labels the button "select" for 1.5 s */
+    const btn = { textContent: 'copy', dataset: { copy: 'abc' }, parentElement: { firstChild: {}, lastChild: {} } };
+    let selected = 0;
+    ctx.document.createRange = () => ({ selectNodeContents() {}, setEndBefore() {} });
+    ctx.getSelection = () => ({ removeAllRanges() {}, addRange() { selected++; } });
+    ctx.navigator.clipboard = { writeText: () => Promise.reject(new Error('denied')) };
+    ctx.__btn = btn; run('copyValue(__btn,"abc")');
+    await sleep(60);
+    ok(btn.textContent === 'select' && selected === 1, 'brief-item: rejected clipboard did not fall back to select (label ' + btn.textContent + ', selections ' + selected + ')');
+    await sleep(1600);
+    ok(btn.textContent === 'copy', 'brief-item: copy label not restored after the fallback');
+    ctx.navigator.clipboard = { writeText: () => Promise.resolve() };
+    run('copyValue(__btn,"abc")');
+    await sleep(60);
+    ok(btn.textContent === 'copied', 'brief-item: successful copy label is ' + btn.textContent);
+    await sleep(1600);
+    ok(btn.textContent === 'copy', 'brief-item: copy label not restored after success');
+    ctx.navigator.clipboard = undefined;
+    run('copyValue(__btn,"abc")');
+    await sleep(60);
+    ok(btn.textContent === 'select', 'brief-item: a missing clipboard API did not fall back to select');
+    await sleep(1600);
+    ok(env.errors.length === 0, 'brief-item: console.error ' + env.errors.slice(0, 3).join(' | '));
+    console.log('6. brief-item      trajectory svg, no undefined/NaN/null, timeline merge, bad-date notice, ctx key by text, filters reset per date, direct item load, copy fallback');
+  }
+  /* --- end regressions: brief-item --- */
+
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

@@ -445,6 +445,9 @@ tr.rowlink{cursor:pointer}tr.rowlink td:first-child,tr.rowlink td a{white-space:
 .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:0 0 1rem}
 @media (max-width:760px){.dgrid{grid-template-columns:1fr}}
 .tl2wrap{overflow-x:auto;overflow-y:visible;padding:4px 0 2px}
+.tl2wrap,.rail .tw{background:linear-gradient(to right,var(--bg-primary) 30%,transparent) left center/28px 100% no-repeat local,linear-gradient(to left,var(--bg-primary) 30%,transparent) right center/28px 100% no-repeat local,linear-gradient(to right,rgba(0,0,0,.32),transparent) left center/10px 100% no-repeat scroll,linear-gradient(to left,rgba(0,0,0,.32),transparent) right center/10px 100% no-repeat scroll,var(--bg-primary)} /* scroll cue: an edge shadow shows only on the side that has more to scroll to */
+.tlhint{font-family:var(--font-mono);font-size:10px;color:var(--text-muted);text-align:right;margin-top:2px}
+.rail .tw table{font-size:12px}.rail .tw td,.rail .tw th{padding:.35rem .45rem}
 .tl2{position:relative;height:118px;min-width:100%;user-select:none}
 .tl2 .months{position:absolute;left:0;right:0;top:0;height:16px}
 .tl2 .mo{position:absolute;top:0;font-family:var(--font-mono);font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);padding-left:4px;border-left:1px solid var(--border);height:100px}
@@ -781,6 +784,7 @@ function markViewed(id){viewed=[id,...viewed.filter(x=>x!==id)].slice(0,12);stor
 function brief(){return BRIEFS[state.date]||BRIEFS[TODAY_S]}
 function byId(id,b){return (b||brief()).items.find(i=>i.item_id===id)}
 function itemAny(id){for(let d=DATES.length-1;d>=0;d--){const it=BRIEFS[DATES[d]].items.find(i=>i.item_id===id);if(it)return {it,date:DATES[d]}}return null}
+const TL_SCROLL_HINT_PX=480; /* timelines wider than this may overflow the card: show the scroll hint */
 const RELEVANT_WINDOW=7; /* briefs, not calendar days */
 function activeItems(){ /* items seen in any of the last RELEVANT_WINDOW briefs: today's observation, or the last one, marked carried */
   const recent=new Set(DATES.slice(-RELEVANT_WINDOW));const out=[];
@@ -861,7 +865,7 @@ function outstandingTable(rows,o={}){
 }
 function ctxCard(key,title,arr,extra){
   if(!arr||!arr.length)return `<div class="card absent"><h3>${title}</h3><div class="s">Not included in this brief</div></div>`;
-  return `<div class="card"><h3>${title}</h3><ul class="ctx">${arr.map((x,i)=>{const k=key+'-'+i,open=state.ctx.has(k);return `<li class="${open?'open':''}"><div class="one" data-ctx="${k}" role="button" tabindex="0" aria-expanded="${open}"><span class="tx">${esc(x.t)}</span><span class="cv" aria-hidden="true">${open?'▴':'▾'}</span></div><p class="more">${esc(x.d)}</p><div class="s">${extra?extra(x):esc(x.s)}</div></li>`}).join('')}</ul></div>`;
+  return `<div class="card"><h3>${title}</h3><ul class="ctx">${arr.map((x,i)=>{const k=key+':'+x.t,open=state.ctx.has(k);return `<li class="${open?'open':''}"><div class="one" data-ctx="${k}" role="button" tabindex="0" aria-expanded="${open}"><span class="tx">${esc(x.t)}</span><span class="cv" aria-hidden="true">${open?'▴':'▾'}</span></div><p class="more">${esc(x.d)}</p><div class="s">${extra?extra(x):esc(x.s)}</div></li>`}).join('')}</ul></div>`;
 }
 function contextCards(b){const c=b.context;return `<div class="stack">${ctxCard('geo','Geopolitical & threat context',c.geopolitical)}${ctxCard('ai','AI watch',c.ai_watch)}${ctxCard('wl','Watchlist',c.watchlist,x=>`since ${esc(x.since)} · trigger: ${esc(x.trigger)}`)}</div>`}
 function feedsText(r){return Number.isFinite(r.feeds_fresh)&&Number.isFinite(r.feeds_total)?`feeds ${r.feeds_fresh}/${r.feeds_total} fresh`:'feeds n/a'}
@@ -1021,7 +1025,7 @@ function relevantSection(b){
 function renderBrief(){
   const b=brief();const di=DATES.indexOf(b.date);const items=applyFilters(b.items).sort((p,q)=>q.score-p.score);let rows='',lastTier=0;
   items.forEach(it=>{if(it.tier!==lastTier){rows+=`<div class="band ${it.tier===1?'t1':''}">Tier ${it.tier} · ${TIER_NAME[it.tier]}${it.tier<lastTier?' · <span style="color:var(--degraded)">out of score order</span>':''}</div>`;lastTier=it.tier}rows+=itemCard(it)});
-  return `<div class="crumb"><a href="#home">Your work</a><span>›</span><span>Daily brief</span></div>
+  return `${state.notice?`<div class="banner-err notice" role="status">${esc(state.notice)}</div>`:''}<div class="crumb"><a href="#home">Your work</a><span>›</span><span>Daily brief</span></div>
   <div class="ph"><div><h1>Daily brief · <span class="mono">${esc(b.date)}</span>${b.date===TODAY_S?' <span class="pill new">Today</span>':''}</h1><span class="sub">${b.items.length} items · baseline ${b.baseline_date||'none'}${b.threat_level?` · threat level <span class="pr ${b.threat_level==='CRITICAL'?'critical':b.threat_level==='HIGH'?'high':'medium'}">${esc(b.threat_level)}</span>`:''}</span></div>
   <div style="display:flex;gap:.35rem;align-items:center">${di>0?`<a class="btn sm" href="#brief-${DATES[di-1]}">‹ ${DATES[di-1]}</a>`:'<span class="btn sm" aria-disabled="true" style="opacity:.4">‹</span>'}${di<TODAY?`<a class="btn sm" href="#brief-${DATES[di+1]}">${DATES[di+1]} ›</a>`:'<span class="btn sm" aria-disabled="true" style="opacity:.4">›</span>'}<a class="btn sm" href="#archive">Archive</a></div></div>
   ${b.run.valid?'':'<div class="banner-err">This brief failed schema validation. Content below may be incomplete.</div>'}
@@ -1136,6 +1140,13 @@ function renderArchive(){
 }
 
 /* ---- Popout ---- */
+function mergeObservations(L){ /* one entry per date: the later observation's tier and score win, escalation on any of them is kept */
+  const out=[];
+  L.days.forEach((day,i)=>{const esc=L.escDays.includes(day),last=out[out.length-1];
+    if(last&&last.day===day)out[out.length-1]={day,tier:L.tiers[i],score:L.scores[i],esc:last.esc||esc,n:last.n+1};
+    else out.push({day,tier:L.tiers[i],score:L.scores[i],esc,n:1})});
+  return out;
+}
 function timeline(L,it){
   const ms=d=>Date.parse(d+'T00:00:00Z'),DAY=86400000,fmt=t=>new Date(t).toISOString().slice(0,10);
   const cve=it.cve_published||null;
@@ -1146,9 +1157,9 @@ function timeline(L,it){
   /* events */
   const evs=[];
   if(cve)evs.push({t:ms(cve),cls:'cve',g:'CVE',tip:`<div class="d">${cve}</div>${esc(it.identifiers[0]||'CVE')} published${cve===L.first_seen?' · same day as first brief':''}`});
-  L.days.forEach((d,i)=>{const o=BRIEFS[d]&&BRIEFS[d].items.find(x=>x.item_id===L.id);const tier=L.tiers[i],sc=L.scores[i];const first=i===0;const escd=L.escDays.includes(d);
+  mergeObservations(L).forEach((m,i)=>{const d=m.day,o=BRIEFS[d]&&BRIEFS[d].items.filter(x=>x.item_id===L.id).pop();const tier=m.tier,sc=m.score;const first=i===0;const escd=m.esc;
     const snippet=o?(o.delta||o.description||''):'';
-    evs.push({t:ms(d),cls:(first?'first ':'')+'t'+tier+(escd?' esc':''),g:first?'★':'≡',tip:`<div class="d">${d}${first?' · first brief':''}${d===TODAY_S?' · today':''}</div>Tier ${tier} · score ${sc}${o?` · ${o.status==='new'?'new':'continued '+o.continued_days+'d'}`:''}${escd?' · <span style="color:var(--sev-critical)">escalation</span>':''}${snippet?`<div class="s">${esc(snippet.slice(0,140))}${snippet.length>140?'…':''}</div>`:''}`})});
+    evs.push({t:ms(d),cls:(first?'first ':'')+'t'+tier+(escd?' esc':''),g:first?'★':'≡',tip:`<div class="d">${d}${first?' · first brief':''}${d===TODAY_S?' · today':''}</div>Tier ${tier} · score ${sc}${o?` · ${o.status==='new'?'new':'continued '+o.continued_days+'d'}`:''}${m.n>1?` · ${m.n} observations that day`:''}${escd?' · <span style="color:var(--sev-critical)">escalation</span>':''}${snippet?`<div class="s">${esc(snippet.slice(0,140))}${snippet.length>140?'…':''}</div>`:''}`})});
   evs.sort((a,b)=>a.t-b.t);
   /* continuous-run segments on the track */
   let segs='';{let runStart=null,prev=null;L.days.forEach(d=>{const t=ms(d);if(runStart===null){runStart=t}else if(t-prev>DAY){if(prev>runStart)segs+=`<div class="seg" style="left:${X(runStart)};width:calc(${X(prev)} - ${X(runStart)})"></div>`;runStart=t}prev=t});if(prev>runStart)segs+=`<div class="seg" style="left:${X(runStart)};width:calc(${X(prev)} - ${X(runStart)})"></div>`}
@@ -1156,7 +1167,7 @@ function timeline(L,it){
   const pxPerDay=28;const widthPx=span*pxPerDay;
   let labels='',lastX=-1e9,row=0;evs.forEach(e=>{const xpx=(e.t-t0)/DAY*pxPerDay;if(xpx-lastX<46){row=row?0:1}else row=0;lastX=xpx;const strong=e.cls.includes('first')||e.cls==='cve'||fmt(e.t)===TODAY_S;labels+=`<div class="dl ${row?'r2':''} ${strong?'strong':''}" style="left:${X(e.t)}">${fmt(e.t).slice(5)}</div>`});
   const icons=evs.map(e=>{const pct=(e.t-t0)/(t1-t0);return `<div class="ev ${e.cls} ${pct<.12?'edge-l':pct>.88?'edge-r':''}" style="left:${X(e.t)}" tabindex="0" role="img" aria-label="${esc(e.tip.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim())}"><div class="b" aria-hidden="true">${e.g}</div><div class="stem"></div><div class="tip">${e.tip}</div></div>`}).join('');
-  return `<div class="tl2wrap"><div class="tl2" data-t0="${t0}" data-t1="${t1}" style="min-width:${Math.max(0,widthPx)}px"><div class="months">${months}</div><div class="track"></div>${segs}${icons}${labels}<div class="today" style="left:${X(ms(TODAY_S))}"><i>TODAY</i></div><div class="curline"></div><div class="cur"></div></div></div>
+  return `<div class="tl2wrap" tabindex="0" role="region" aria-label="Item timeline; scroll sideways when it is wider than the card"><div class="tl2" data-t0="${t0}" data-t1="${t1}" style="min-width:${Math.max(0,widthPx)}px"><div class="months">${months}</div><div class="track"></div>${segs}${icons}${labels}<div class="today" style="left:${X(ms(TODAY_S))}"><i>TODAY</i></div><div class="curline"></div><div class="cur"></div></div></div>${widthPx>TL_SCROLL_HINT_PX?'<div class="tlhint" aria-hidden="true">← scroll for earlier dates</div>':''}
   <div class="lg2"><span><i class="fs"></i>first brief</span><span><i class="pb" style="background:var(--text-secondary)"></i>in brief (ring = tier)</span><span><i class="pb"></i>CVE published</span><span class="mono" style="color:var(--sev-critical)">!</span><span class="muted">escalation · hover an icon for the snippet, hover the track for the date</span></div>`;
 }
 function trajectory(L){const n=L.scores.length;if(n<2)return `<div class="empty">Single observation; no trajectory yet.</div>`;const W=600,H=90,PLx=28,PRx=10,PTx=10,PBx=18;const X=i=>PLx+i/(n-1)*(W-PLx-PRx),Y=v=>PTx+(1-v/100)*(H-PTx-PBx);
@@ -1164,7 +1175,7 @@ function trajectory(L){const n=L.scores.length;if(n<2)return `<div class="empty"
   s+=`<path style="fill:none;stroke:var(--text-primary);stroke-width:2" d="${L.scores.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join(' ')}"/>`;
   L.tiers.forEach((t,i)=>{if(i===0||t!==L.tiers[i-1])s+=`<circle cx="${X(i)}" cy="${Y(L.scores[i])}" r="4.5" style="fill:${t===1?'var(--sev-critical)':t===2?'var(--sev-medium)':'var(--chart-t3)'};stroke:var(--bg-primary);stroke-width:1.5"><title>${L.days[i]}: Tier ${t}, score ${L.scores[i]}</title></circle>`});
   L.escDays.forEach(d=>{const i=L.days.indexOf(d);s+=`<text x="${X(i)}" y="${Y(L.scores[i])-8}" text-anchor="middle" style="font-family:var(--font-mono);font-size:10px;fill:var(--sev-critical);font-weight:600">!</text>`});
-  s+=`<text x="${PLx}" y="${H-4}" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[0]}</text><text x="${W-PRx}" y="${H-4}" text-anchor="end" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[n-1]}</text></svg><div class="legend"><span><i class="i-line"></i>score</span><span><i class="i-t1"></i>Tier 1</span><span><i class="i-t2"></i>Tier 2</span><span><i class="i-t3"></i>Tier 3</span><span class="mono" style="color:var(--sev-critical)">!</span><span class="muted">escalation</span></div>`;
+  s+=`<text x="${PLx}" y="${H-4}" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[0]}</text><text x="${W-PRx}" y="${H-4}" text-anchor="end" style="font-family:var(--font-mono);font-size:10px;fill:var(--text-muted)">${L.days[n-1]}</text></svg><div class="legend"><span><i class="i-line"></i>score</span><span><i class="i-t1"></i>Tier 1</span><span><i class="i-t2"></i>Tier 2</span><span><i class="i-t3"></i>Tier 3</span><span class="mono" style="color:var(--sev-critical)">!</span><span class="muted">escalation</span></div>`;return s;
 }
 function renderDetail(id,enter){ /* enter: first render of this item; a re-render while it is open must not replay the entrance */
   const ovc=enter?'ov enter':'ov';const x=itemAny(id);if(!x)return `<div class="${ovc}" id="ovbg"><div class="panel"><button class="close" data-close>close ✕</button><div class="empty">No item with that id in the archive.</div></div></div>`;
@@ -1369,11 +1380,30 @@ function skipToMain(){ /* #main is the skip-link target, not a route: keep the p
   try{history.replaceState(history.state,'',location.pathname+location.search+pageHash())}catch(e){}
   const m=document.getElementById('main');if(m)m.focus();
 }
+function mainIsEmpty(){const m=document.getElementById('main');return !m||!String(m.innerHTML).trim()}
+function paintBeneath(id){ /* a direct #item- load: nothing is on the page yet, so paint the item's own brief (its latest, today's when it is in it) and closing the popout lands on a real page */
+  const x=itemAny(id);Object.assign(state,{page:'brief',date:x&&BRIEFS[x.date]?x.date:TODAY_S});paintMain();
+}
+function revealTimelineToday(){ /* a timeline wider than its card starts scrolled to the right edge so the TODAY marker is in view */
+  try{document.querySelectorAll('#ov .tl2wrap').forEach(w=>{w.scrollLeft=w.scrollWidth})}catch(e){console.error('AEGIS timeline scroll failed',e)}
+}
+function resolveBriefRoute(h){ /* an unknown #brief-<date> falls back to today's brief with a notice */
+  if(!h.date)return {date:undefined,notice:null};
+  if(BRIEFS[h.date])return {date:h.date,notice:null};
+  return {date:TODAY_S,notice:`No brief for ${h.date}; showing today's.`};
+}
+function applyBriefNotice(h,route){ /* the notice stays while today's brief is re-rendered after the hash is normalised, and goes on any other navigation */
+  if(route.notice){state.notice=route.notice;try{history.replaceState(null,'','#brief')}catch(e){console.error('AEGIS could not normalise the hash',e)}return}
+  if(!(h.page==='brief'&&state.page==='brief'&&h.date===TODAY_S&&state.date===TODAY_S))state.notice=null;
+}
+function resetBriefFilters(){ /* filters belong to one date's list; carrying them to another date can strand the user on "No items match." */
+  state.f={...state.f,area:null,tier:null,status:null,source:null};
+}
 function renderInner(){
   const h=parseHash();
   const fkey=h.item?null:focusKey(document.activeElement);
-  if(h.item){/* overlay over current page */ lastOpener=h.item;markViewed(h.item);if(MAIN_STALE)paintMain();const fresh=h.item!==lastItemKey;lastItemKey=h.item;document.getElementById('ov').innerHTML=renderDetail(h.item,fresh);document.body.classList.add('locked');const c=document.querySelector('#ov .close');if(c)c.focus()}
-  else{lastItemKey=null;Object.assign(state,{page:h.page});if(h.date)state.date=BRIEFS[h.date]?h.date:TODAY_S;if(h.area!==undefined)state.area=h.area;if(h.report!==undefined){if(state.report!==h.report)state.sel=null;state.report=h.report}
+  if(h.item){/* overlay over current page */ lastOpener=h.item;markViewed(h.item);if(MAIN_STALE||mainIsEmpty())paintBeneath(h.item);const fresh=h.item!==lastItemKey;lastItemKey=h.item;document.getElementById('ov').innerHTML=renderDetail(h.item,fresh);document.body.classList.add('locked');if(fresh)revealTimelineToday();const c=document.querySelector('#ov .close');if(c)c.focus()}
+  else{lastItemKey=null;const route=resolveBriefRoute(h);applyBriefNotice(h,route);if(route.date&&route.date!==state.date)resetBriefFilters();Object.assign(state,{page:h.page});if(route.date)state.date=route.date;if(h.area!==undefined)state.area=h.area;if(h.report!==undefined){if(state.report!==h.report)state.sel=null;state.report=h.report}
     document.getElementById('ov').innerHTML='';document.body.classList.remove('locked');
     if(h.unknown){try{history.replaceState(history.state,'',location.pathname+location.search+'#home')}catch(e){}}
     paintMain()}
@@ -1405,6 +1435,18 @@ function closeOv(){ /* v1.6.0: fade the overlay out first; straight away when th
   if(!ov||!ov.classList||ovClosing||reducedMotion()){go();return}
   ovClosing=true;ov.classList.add('leaving');const h0=location.hash;
   setTimeout(()=>{if(location.hash!==h0){ovClosing=false;return} /* something else navigated meanwhile; leave it be */ go()},130);
+}
+const COPY_LABEL_MS=1500;
+function setCopyLabel(btn,label){btn.textContent=label;setTimeout(()=>{btn.textContent='copy'},COPY_LABEL_MS)}
+function selectCopyValue(btn){ /* clipboard missing or refused: select the visible value so Ctrl+C still works */
+  try{const r=document.createRange();r.selectNodeContents(btn.parentElement);r.setEndBefore(btn);const s=window.getSelection();s.removeAllRanges();s.addRange(r);return true}
+  catch(e){console.error('AEGIS copy fallback failed',e);return false}
+}
+function copyValue(btn,v){
+  const fallback=()=>setCopyLabel(btn,selectCopyValue(btn)?'select':'copy failed');
+  let p=null;try{p=navigator.clipboard&&navigator.clipboard.writeText(v)}catch(e){p=null}
+  if(!p||typeof p.then!=='function'){fallback();return}
+  p.then(()=>setCopyLabel(btn,'copied'),fallback);
 }
 document.addEventListener('click',e=>{
   const t=e.target;
@@ -1460,7 +1502,7 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-col]')){brief().items.forEach(i=>state.level.set(i.item_id,0));flipRender();return}
   const cc=t.closest('[data-collapse]');if(cc){e.stopPropagation();state.level.set(cc.dataset.collapse,0);flipRender();return}
   const cx=t.closest('[data-ctx]');if(cx){const k=cx.dataset.ctx;state.ctx.has(k)?state.ctx.delete(k):state.ctx.add(k);render();return}
-  const cp=t.closest('[data-copy]');if(cp){const v=cp.dataset.copy;navigator.clipboard?.writeText(v).then(()=>{cp.textContent='copied';setTimeout(()=>cp.textContent='copy',900)}).catch(()=>{cp.textContent='select'});return}
+  const cp=t.closest('[data-copy]');if(cp){copyValue(cp,cp.dataset.copy);return}
   if(t.closest('[data-close]')||t.id==='ovbg'){closeOv();return}
   const nv=t.closest('[data-nav]');if(nv&&!t.closest('a')){location.hash=nv.dataset.nav;return}
   const orow=t.closest('[data-openrow]');if(orow){location.hash='#item-'+orow.dataset.openrow;return}
