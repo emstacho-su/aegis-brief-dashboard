@@ -739,6 +739,23 @@ function fakeSupabase(db) {
   }
   /* --- end regressions: brief-item --- */
 
+  /* --- regressions: security --- */
+  {
+    const fetchImpl = async () => ({ ok: true, status: 200, json: async () => ({ briefs: JSON.parse(JSON.stringify(briefs)), manifest: { retained: Object.keys(briefs) } }) });
+    const env = await start({ config: { apiBase: '', mode: 'container' }, fetchImpl });
+    const { run, ctx } = env;
+    /* a context bullet title from the brief must not be able to break out of the data-ctx attribute (the key is built from it) */
+    const Q = 'String.fromCharCode(34)';
+    run(`BRIEFS[TODAY_S].context.geopolitical=[{t:'x'+${Q}+' onfocus='+${Q}+'alert(1)',d:'d',w:'w'}].concat(BRIEFS[TODAY_S].context.geopolitical||[])`);
+    ctx.location.hash = '#brief'; run('render()');
+    const html = env.main().innerHTML;
+    ok(!/data-ctx="geo:x" onfocus=/.test(html), 'security: a context bullet title breaks out of the data-ctx attribute');
+    ok(/data-ctx="geo:x&quot; onfocus=&quot;alert\(1\)"/.test(html), 'security: data-ctx is not entity-escaped');
+    ok(env.errors.length === 0, 'security console.error: ' + env.errors.slice(0, 2).join(' | '));
+    console.log('7. security        brief content cannot break out of data-ctx');
+  }
+  /* --- end regressions: security --- */
+
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

@@ -865,7 +865,7 @@ function outstandingTable(rows,o={}){
 }
 function ctxCard(key,title,arr,extra){
   if(!arr||!arr.length)return `<div class="card absent"><h3>${title}</h3><div class="s">Not included in this brief</div></div>`;
-  return `<div class="card"><h3>${title}</h3><ul class="ctx">${arr.map((x,i)=>{const k=key+':'+x.t,open=state.ctx.has(k);return `<li class="${open?'open':''}"><div class="one" data-ctx="${k}" role="button" tabindex="0" aria-expanded="${open}"><span class="tx">${esc(x.t)}</span><span class="cv" aria-hidden="true">${open?'▴':'▾'}</span></div><p class="more">${esc(x.d)}</p><div class="s">${extra?extra(x):esc(x.s)}</div></li>`}).join('')}</ul></div>`;
+  return `<div class="card"><h3>${title}</h3><ul class="ctx">${arr.map((x,i)=>{const k=key+':'+x.t,open=state.ctx.has(k);return `<li class="${open?'open':''}"><div class="one" data-ctx="${esc(k)}" role="button" tabindex="0" aria-expanded="${open}"><span class="tx">${esc(x.t)}</span><span class="cv" aria-hidden="true">${open?'▴':'▾'}</span></div><p class="more">${esc(x.d)}</p><div class="s">${extra?extra(x):esc(x.s)}</div></li>`}).join('')}</ul></div>`;
 }
 function contextCards(b){const c=b.context;return `<div class="stack">${ctxCard('geo','Geopolitical & threat context',c.geopolitical)}${ctxCard('ai','AI watch',c.ai_watch)}${ctxCard('wl','Watchlist',c.watchlist,x=>`since ${esc(x.since)} · trigger: ${esc(x.trigger)}`)}</div>`}
 function feedsText(r){return Number.isFinite(r.feeds_fresh)&&Number.isFinite(r.feeds_total)?`feeds ${r.feeds_fresh}/${r.feeds_total} fresh`:'feeds n/a'}
