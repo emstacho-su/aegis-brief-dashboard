@@ -77,9 +77,64 @@ async function checkMenuAndFocus(browser) {
   await page.close();
 }
 
+async function checkSidebar(browser) {
+  const page = await openPage(browser, 1280, 800, '#trends-restime');
+  /* side-trends-badge-truncate: the report badge is cut, the label keeps its full text */
+  const lbl = await page.evaluate(() => { const a = document.querySelector('#side a[href="#trends"]'), tx = a.querySelector('.tx'), d = a.querySelector('.dotc');
+    return { tx: tx.scrollWidth - tx.clientWidth, txw: tx.getBoundingClientRect().width, badge: d ? d.textContent : '', dh: d ? d.getBoundingClientRect().height : 0, over: a.scrollWidth - a.clientWidth }; });
+  ok(lbl.badge.length > 0, 'no report badge on the Trends link, so the truncation check proves nothing');
+  ok(lbl.tx <= 0 && lbl.txw > 30, 'Trends label is squeezed: overflow ' + lbl.tx + ', width ' + lbl.txw);
+  ok(lbl.dh < 20 && lbl.over <= 0, 'Trends badge wraps or overflows: height ' + lbl.dh + ', overflow ' + lbl.over);
+  /* side-collapse-mouse: a visible chevron collapses and expands with the mouse */
+  const vis = await page.evaluate(() => { const b = document.getElementById('sideTgl'), r = b.getBoundingClientRect(); return { w: r.width, h: r.height, hit: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === b || b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)) }; });
+  ok(vis.w >= 16 && vis.h >= 16 && vis.hit, 'collapse control is not visible or clickable at 1280: ' + JSON.stringify(vis));
+  await page.click('#sideTgl');
+  ok(await page.evaluate(() => document.getElementById('side').classList.contains('collapsed')), 'mouse click on the chevron did not collapse the sidebar');
+  await page.waitForTimeout(400); /* the grid column animates */
+  const vis2 = await page.evaluate(() => { const r = document.getElementById('sideTgl').getBoundingClientRect(); return r.width >= 16 && r.right <= 56 + 1; });
+  ok(vis2, 'collapsed chevron is not visible inside the 56px rail');
+  await page.click('#sideTgl');
+  ok(!(await page.evaluate(() => document.getElementById('side').classList.contains('collapsed'))), 'mouse click on the chevron did not expand the sidebar');
+  /* side-group-persist: a manually opened group is still open after a reload */
+  await page.goto(URL + '#home'); await page.waitForSelector('#main h1');
+  const open = () => page.getAttribute('[data-grp="areas"]', 'aria-expanded');
+  if (await open() === 'true') await page.click('[data-grp="areas"]');
+  await page.click('[data-grp="areas"]');
+  ok(await open() === 'true', 'Areas group did not open on click');
+  await page.reload(); await page.waitForSelector('#main h1');
+  ok(await open() === 'true', 'Areas group was closed again after a reload');
+  await page.close();
+}
+
+async function checkPhoneTabs(browser) {
+  const page = await openPage(browser, 390, 844, '#home');
+  const r = await page.evaluate(() => { const t = document.querySelector('.tabs'), bs = [...t.querySelectorAll('[role="tab"]')];
+    return { n: bs.length, right: Math.max(...bs.map(b => b.getBoundingClientRect().right)), left: Math.min(...bs.map(b => b.getBoundingClientRect().left)), pos: getComputedStyle(t).position, scroll: t.scrollWidth - t.clientWidth }; });
+  ok(r.n >= 4 && r.left >= 0 && r.right <= 390, 'home tabs run off the 390px viewport: ' + JSON.stringify(r));
+  ok(r.scroll <= 0, 'home tab row still scrolls sideways at 390: ' + r.scroll);
+  ok(r.pos === 'relative', '.tabs lost position:relative');
+  ok(await hscroll(page) === 0, 'horizontal page overflow on #home at 390');
+  await page.close();
+}
+
+async function checkSpaceOnCard(browser) {
+  const page = await openPage(browser, 1280, 800, '#brief');
+  await page.waitForSelector('[data-expand]');
+  const card = page.locator('[data-expand]').first();
+  await card.focus();
+  const before = await page.evaluate(() => document.getElementById('main').innerHTML.length);
+  const y0 = await page.evaluate(() => window.scrollY);
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => document.getElementById('main').innerHTML.length);
+  ok(before !== after, 'Space did not toggle the focused card (page markup ' + before + ' -> ' + after + ')');
+  ok(Math.abs((await page.evaluate(() => window.scrollY)) - y0) < 2, 'Space scrolled the page');
+  await page.close();
+}
+
 (async () => {
   const browser = await pw.chromium.launch();
-  try { await checkOverflow(browser); await checkPhoneHeader(browser); await checkMenuAndFocus(browser); }
+  try { await checkOverflow(browser); await checkPhoneHeader(browser); await checkMenuAndFocus(browser); await checkSidebar(browser); await checkPhoneTabs(browser); await checkSpaceOnCard(browser); }
   catch (e) { failures++; console.log('  FAIL script error: ' + e.message); }
   await browser.close();
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nBROWSER SHELL CHECKS PASSED');

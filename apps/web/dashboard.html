@@ -129,6 +129,7 @@ h1,h2,h3{text-wrap:balance}
 .side.collapsed .lnk .tx,.side.collapsed .hd2 .tx,.side.collapsed .dotc,.side.collapsed .chev,.side.collapsed .sub,.side.collapsed .ic{display:none}
 .side.collapsed .lnk.on{box-shadow:inset 3px 0 0 var(--accent)}
 .side .tgl button{color:var(--text-muted)}
+@media (min-width:901px){.side .tgl{display:flex;justify-content:flex-end}.side.collapsed .tgl{justify-content:center}.side .tgl button{position:static;width:auto;height:auto;clip:auto;overflow:visible;padding:.25rem .4rem;margin-bottom:.4rem}} /* mouse users get a visible chevron; keyboard users reach the same button */
 .side.collapsed .grp .hd2.on{background:var(--bg-active);box-shadow:inset 3px 0 0 var(--accent)}
 @media (max-width:900px){.shell.collapsed{grid-template-columns:1fr}.side.collapsed{padding:.9rem .7rem}.side.collapsed .lnk .tx,.side.collapsed .hd2 .tx,.side.collapsed .dotc,.side.collapsed .chev,.side.collapsed .sub{display:initial}.side.collapsed .lnk,.side.collapsed .hd2{justify-content:space-between;padding:.42rem .6rem}.side.collapsed .tgl{display:none}}
 .side .lnk{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.42rem .6rem;border-radius:var(--radius-md);color:var(--text-secondary);text-decoration:none;font-size:13px;font-weight:500}
@@ -148,6 +149,7 @@ h1,h2,h3{text-wrap:balance}
 .side .grp .sub>.in>.lnk:first-child{margin-top:5px}.side .grp .sub>.in>.lnk:last-child{margin-bottom:5px}
 .side .sub .lnk{padding:.3rem .6rem .3rem .9rem;font-size:12.5px;font-weight:400}
 .side .dotc{font-family:var(--font-mono);font-size:10px;color:var(--text-muted)}
+.side .lnk .dotc{flex:0 1 auto;min-width:0;max-width:11ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.side .lnk .lb{flex:0 0 auto;max-width:100%} /* a long report badge is cut with an ellipsis and never squeezes the label */
 .side .dotc.hot{color:var(--sev-critical)}
 .side .ic{width:14px;display:inline-block;text-align:center;color:var(--text-muted);margin-right:.35rem;font-family:var(--font-mono);font-size:11px}
 .content{min-width:0}
@@ -188,6 +190,7 @@ h1,h2,h3{text-wrap:balance}
 .two.wrap .rail{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.75rem 1rem;align-items:start}
 .two.wrap .rail .sec,.two.wrap .rail .stack{display:contents}
 .two.wrap .rail .sec-h{grid-column:1/-1;margin:.5rem 0 0}
+.two.wrap .rail .sec>.stream{grid-column:1/-1} /* the activity stream is a list, not a card: give it the full width */
 .two.wrap .rail .tw,.two.wrap .rail .empty{grid-column:1/-1}
 .sec{margin-bottom:1.3rem;min-width:0}
 .sec-h{display:flex;align-items:center;justify-content:space-between;gap:.75rem;border-left:3px solid var(--border-hover);padding-left:.6rem;margin-bottom:.5rem;flex-wrap:wrap}
@@ -261,6 +264,7 @@ h1,h2,h3{text-wrap:balance}
 .collh:hover .hint,.collh.is-collapsed .hint{opacity:1}
 .sec.is-collapsed .secbody{display:none}
 .tabs button{padding:.4rem .75rem;font-size:13px;color:var(--text-secondary);white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
+@media (max-width:600px){.tabs{flex-wrap:wrap}.collh .hint{display:none}} /* phone: all tabs visible on two rows instead of a hidden swipe */
 .tabs button .c{font-family:var(--font-mono);font-size:10px;margin-left:.3rem;color:var(--text-muted)}
 .tabs button[aria-selected="true"]{color:var(--text-primary);border-bottom-color:var(--accent)}
 .picker{display:flex;flex-wrap:wrap;gap:.4rem;padding:.6rem .75rem;border:1px dashed var(--border-hover);border-radius:var(--radius-md);align-items:center}
@@ -777,7 +781,7 @@ function setStoreNs(uid){
   const ns='aegis4-'+(uid?String(uid).replace(/-/g,'').slice(0,12):'anon')+'-';if(ns===STORE_NS)return;STORE_NS=ns;
   myAreas=new Set(store.get('my',[]));stars=new Set(store.get('stars',[]));viewed=store.get('viewed',[]);
   if(typeof fb!=='undefined'){fb.list=store.get('feedback',[])}
-  if(typeof state!=='undefined'){state.coll=new Set(store.get('coll',[]));state.sideCollapsed=!!store.get('sidecol',false)}
+  if(typeof state!=='undefined'){state.coll=new Set(store.get('coll',[]));state.sideCollapsed=!!store.get('sidecol',false);state.side=loadSideGroups()}
 }
 let myAreas=new Set(store.get('my',[])),stars=new Set(store.get('stars',[])),viewed=store.get('viewed',[]);
 function markViewed(id){viewed=[id,...viewed.filter(x=>x!==id)].slice(0,12);store.set('viewed',viewed)}
@@ -1210,7 +1214,8 @@ rank 2  chunk c_1a07  doc d_feeds/${esc(it.source.name.toLowerCase().replace(/\s
    7. Notes, mount, events
    ========================================================================= */
 function renderRibbon(){const r=document.getElementById('ribbon');if(r)r.textContent=BOOTED&&DATES.length?`v1.6.0 · ${DATES.length} ${plural(DATES.length,'brief')} · ${MODE}`:'v1.6.0'}
-state.coll=new Set(store.get('coll',[]));state.side=new Set();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
+const SIDE_GROUPS=['briefs','areas']; /* only a manually opened group is stored; a closed or automatic one follows the route */
+state.coll=new Set(store.get('coll',[]));state.side=loadSideGroups();state.sideOpen=false;state.umenu=false;state.sideCollapsed=!!store.get('sidecol',false);
 const I={
  home:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>',
  brief:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/><path d="M9 13h8M9 17h8"/></svg>',
@@ -1224,6 +1229,8 @@ const I={
  collapse:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 6l-6 6 6 6"/><path d="M19 6l-6 6 6 6"/></svg>',
  expand:'<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 6l6 6-6 6"/><path d="M5 6l6 6-6 6"/></svg>'
 };
+function loadSideGroups(){const v=store.get('sidegrp',[]);return new Set(Array.isArray(v)?v.filter(k=>SIDE_GROUPS.includes(k)):[])}
+function saveSideGroups(){store.set('sidegrp',[...state.side].filter(k=>SIDE_GROUPS.includes(k)))}
 function renderSide(){
   if(!BOOTED)return;
   const b=BRIEFS[TODAY_S];const is=(p,x)=>state.page===p&&(x===undefined||x);const col=state.sideCollapsed;
@@ -1233,13 +1240,13 @@ function renderSide(){
   const groups=[['briefs','Briefs','briefs','#brief',briefsL,state.page==='brief'||state.page==='archive'],['areas','Areas','areas','#home',areasL,state.page==='area']];
   const escN=b.items.filter(i=>i.escalation.required).length;
   const fkey=focusKey(document.activeElement); /* the collapse toggle re-renders only the sidebar */
-  document.getElementById('side').innerHTML=`<nav aria-label="Primary"><div class="tgl"><button id="sideTgl" aria-label="${col?'Expand sidebar':'Collapse sidebar'}">${col?'Expand sidebar':'Collapse sidebar'}</button></div>
+  document.getElementById('side').innerHTML=`<nav aria-label="Primary"><div class="tgl"><button id="sideTgl" aria-label="${col?'Expand sidebar':'Collapse sidebar'}" title="${col?'Expand sidebar':'Collapse sidebar'}">${I[col?'expand':'collapse']}</button></div>
     ${lnk('#home','home','Your work',is('home'),escN?`<span class="dotc hot">${escN} esc</span>`:'','top')}
     ${lnk('#brief','brief',"Today's brief",is('brief',state.date===TODAY_S),`<span class="dotc">${esc(TODAY_S.slice(5))}</span>`,'top')}
     ${groups.map(([k,l,icon,href,inner,auto])=>{const open=state.side.has(k)||(auto&&!state.side.has('!'+k));return col
       ?`<div class="grp"><a class="hd2 ${auto?'on':''}" href="${href}" title="${l}"><span class="lb">${I[icon]}</span></a></div>`
       :`<div class="grp ${open?'open':''}"><button class="hd2" data-grp="${k}" aria-expanded="${open}"><span class="lb">${I[icon]}<span class="tx">${l}</span></span><span class="chev">${open?'▴':'▾'}</span></button><div class="sub"><div class="in">${inner}</div></div></div>`}).join('')}
-    ${lnk('#trends','trends','Trends',is('trends'),state.report?`<span class="dotc">${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}</span>`:'','top')}</nav>`;
+    ${lnk('#trends','trends','Trends',is('trends'),state.report?`<span class="dotc" title="${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}">${esc((REPORTS.find(r=>r.id===state.report)||{}).t||'')}</span>`:'','top')}</nav>`;
   const side=document.getElementById('side');side.classList.toggle('open',state.sideOpen);side.classList.toggle('collapsed',col);syncMenubtn();restoreFocus(fkey);
   const shell=document.querySelector('.shell');if(shell)shell.classList.toggle('collapsed',col);
 }
@@ -1247,8 +1254,8 @@ function syncMenubtn(){const b=document.getElementById('menubtn');if(b)b.setAttr
 function closeDrawer(focusBtn){state.sideOpen=false;const s=document.getElementById('side');if(s)s.classList.remove('open');syncMenubtn();if(focusBtn){const b=document.getElementById('menubtn');if(b)b.focus()}}
 function closeUmenu(focusBtn){state.umenu=false;renderUmenu();if(focusBtn){const b=document.getElementById('avatarBtn');if(b)b.focus()}}
 function resetAll(){ /* everything this page keeps in the browser, back to first-visit state */
-  myAreas=new Set();stars=new Set();viewed=[];fb.list=[];state.coll=new Set();state.sideCollapsed=false;
-  ['my','stars','viewed','coll','sidecol','feedback'].forEach(k=>{try{localStorage.removeItem(STORE_NS+k)}catch(e){console.error('AEGIS could not remove '+STORE_NS+k,e)}});
+  myAreas=new Set();stars=new Set();viewed=[];fb.list=[];state.coll=new Set();state.sideCollapsed=false;state.side=new Set();
+  ['my','stars','viewed','coll','sidecol','sidegrp','feedback'].forEach(k=>{try{localStorage.removeItem(STORE_NS+k)}catch(e){console.error('AEGIS could not remove '+STORE_NS+k,e)}});
   setTheme('system');scheduleSettingsSync();fbRender();render();announce('Everything saved in this browser was reset');
 }
 function renderUmenu(){const m=document.getElementById('umenu');m.hidden=!state.umenu;document.getElementById('avatarBtn').setAttribute('aria-expanded',String(state.umenu));renderAvatar();
@@ -1302,7 +1309,12 @@ function setTheme(v){try{if(v==='system')localStorage.removeItem('aegis4-theme')
 function curTheme(){try{return localStorage.getItem('aegis4-theme')||'system'}catch(e){return 'system'}}
 const SEARCH_MAX=8,SEARCH_GAP_PX=6,SEARCH_EDGE_PX=16,SEARCH_WIDE_PX=420;
 let searchRows=[],searchActive=-1;
-function searchMatches(q){q=q.trim().toLowerCase();if(q.length<2)return [];return Object.values(IDX.life).filter(L=>L.title.toLowerCase().includes(q)||L.identifiers.some(x=>x.toLowerCase().includes(q))).sort((p,q2)=>q2.last_seen.localeCompare(p.last_seen)||q2.maxScore-p.maxScore)}
+function searchByText(q){return Object.values(IDX.life).filter(L=>L.title.toLowerCase().includes(q)||L.identifiers.some(x=>x.toLowerCase().includes(q))).sort((p,q2)=>q2.last_seen.localeCompare(p.last_seen)||q2.maxScore-p.maxScore)}
+/* an area whose key or name contains the query contributes its active items (today's first), each tagged with the area name; a text match is never repeated */
+function searchByArea(q,seen){const keys=Object.keys(AREAS).filter(k=>k.toLowerCase().includes(q)||AREAS[k].name.toLowerCase().includes(q)),out=[];
+  keys.forEach(k=>{const act=activeItems().filter(i=>i.areas.includes(k)),ordered=[...act.filter(i=>!i._carried),...act.filter(i=>i._carried)];
+    ordered.forEach(i=>{const L=IDX.life[i.item_id];if(!L||seen.has(L.id))return;seen.add(L.id);out.push(Object.assign({},L,{inArea:AREAS[k].name}))})});return out}
+function searchMatches(q){q=q.trim().toLowerCase();if(q.length<2)return [];const text=searchByText(q);return text.concat(searchByArea(q,new Set(text.map(L=>L.id))))}
 function searchClose(){const box=document.getElementById('sres'),q=document.getElementById('q');if(box)box.hidden=true;searchRows=[];searchActive=-1;if(q){q.setAttribute('aria-expanded','false');q.removeAttribute('aria-activedescendant')}}
 /* the list hangs off the right edge of the search box; when that would leave the viewport (narrow header), pin it to the page margins under the input instead */
 function searchPlace(q,box){if(typeof q.getBoundingClientRect!=='function')return;
@@ -1324,7 +1336,7 @@ function searchKey(e){if(!e.target||e.target.id!=='q')return;const box=document.
 function renderSearch(){const q=document.getElementById('q');const box=document.getElementById('sres');if(!BOOTED){searchClose();return}if(!q||!document.activeElement||document.activeElement!==q||q.value.trim().length<2){searchClose();return}
   const all=searchMatches(q.value),r=all.slice(0,SEARCH_MAX);searchRows=r;searchActive=-1;box.hidden=false;box.setAttribute('role','listbox');box.setAttribute('aria-label','Search results');
   q.setAttribute('role','combobox');q.setAttribute('aria-expanded','true');q.setAttribute('aria-controls','sres');q.setAttribute('aria-autocomplete','list');q.removeAttribute('aria-activedescendant');
-  box.innerHTML=r.length?r.map((L,i)=>`<div class="r" id="sr-${i}" role="option" aria-selected="false" data-open="${esc(L.id)}"><span class="t">${esc(L.title)}</span><span class="m">${L.identifiers[0]?esc(L.identifiers[0])+' · ':''}${L.last_seen===TODAY_S?'today':esc(L.last_seen)}${L.maxTier===1?' · T1':''}</span></div>`).join('')+(all.length>r.length?`<div class="none">${all.length-r.length} more, keep typing</div>`:''):'<div class="none">No items match.</div>';searchPlace(q,box)}
+  box.innerHTML=r.length?r.map((L,i)=>`<div class="r" id="sr-${i}" role="option" aria-selected="false" data-open="${esc(L.id)}"><span class="t">${esc(L.title)}</span><span class="m">${L.inArea?'in '+esc(L.inArea)+' · ':''}${L.identifiers[0]?esc(L.identifiers[0])+' · ':''}${L.last_seen===TODAY_S?'today':esc(L.last_seen)}${L.maxTier===1?' · T1':''}</span></div>`).join('')+(all.length>r.length?`<div class="none">${all.length-r.length} more, keep typing</div>`:''):'<div class="none">No items match.</div>';searchPlace(q,box)}
 /* v1.6.0 motion helpers. markViewEnter: the view fades in when the route changes (page, area, date or report), not
    on every re-render, so toggling a star or a filter never flashes the page. flipRender: Wrike-style glide; on
    re-renders that reorder or resize cards, each [data-flip] element animates from its old position to its new one
@@ -1472,7 +1484,7 @@ document.addEventListener('click',e=>{
   if(t.closest('#signOutBtn')){signOut();return}
   if(t.closest('#menuSignInBtn')){state.umenu=false;renderUmenu();showSignIn();return}
   if(t.closest('[data-toastx]')){fb.toast=null;fbRender();return}
-  const grp=t.closest('[data-grp]');if(grp){const k=grp.dataset.grp;const open=grp.getAttribute('aria-expanded')==='true';if(open){state.side.delete(k);state.side.add('!'+k)}else{state.side.add(k);state.side.delete('!'+k)}
+  const grp=t.closest('[data-grp]');if(grp){const k=grp.dataset.grp;const open=grp.getAttribute('aria-expanded')==='true';if(open){state.side.delete(k);state.side.add('!'+k)}else{state.side.add(k);state.side.delete('!'+k)}saveSideGroups();
     /* v1.6.0: toggle the existing group in place so the accordion can animate; the next full render agrees with state.side */
     const g=grp.closest('.grp');if(g&&g.classList){g.classList.toggle('open',!open);grp.setAttribute('aria-expanded',String(!open));const ch=grp.querySelector&&grp.querySelector('.chev');if(ch)ch.textContent=open?'▾':'▴'}else renderSide();return}
   const mb=t.closest('#menubtn');if(mb){state.sideOpen=!state.sideOpen;renderSide();return}
@@ -1540,7 +1552,7 @@ document.addEventListener('keydown',e=>{
   if((e.key==='ArrowDown'||e.key==='ArrowUp')&&state.umenu)moveInMenu(e);
   const t=e.target;
   if(t.matches&&t.matches('input,textarea,select,[contenteditable]'))return; /* typing j/k/o in a field must not move focus */
-  if(e.key==='Enter'&&(t.hasAttribute('data-expand')||t.hasAttribute('data-open'))){t.click()}
+  if((e.key==='Enter'||e.key===' ')&&(t.hasAttribute('data-expand')||t.hasAttribute('data-open'))){if(e.key===' ')e.preventDefault();t.click()} /* Space like Enter; no page scroll */
   if(e.key==='j'||e.key==='k'){const rows=[...document.querySelectorAll('[data-expand],[data-open]')];const i=rows.indexOf(document.activeElement);const n=e.key==='j'?Math.min(rows.length-1,i+1):Math.max(0,i-1);rows[n]?.focus()}
   if(e.key==='o'&&(t.hasAttribute('data-expand')||t.hasAttribute('data-open'))){location.hash='#item-'+(t.dataset.expand||t.dataset.open)}
 });
